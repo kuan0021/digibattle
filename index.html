@@ -149,7 +149,7 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
   <div id="save-status" style="font-size:9px;color:#44aa44;"></div>
   <button class="g" onclick="startGame()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
   <button onclick="newGame()" style="font-size:10px;padding:10px;color:#ffee44;max-width:240px;">↺ 重新開始</button>
-  <div style="font-size:9px;color:#445566;" class="blink">v0.10</div>
+  <div style="font-size:9px;color:#445566;" class="blink">v0.11</div>
 </div>
 
 <div id="main-screen" class="screen">
@@ -310,7 +310,7 @@ const ENS=[{name:"天使獸",svg:ES.tenshi,lv:2,atk:10,hp:30},{name:"加布獸",
 const ITS={meat:{name:"烤肉",icon:"🍖",desc:"飽食度+50",ef(){G.hunger=Math.min(100,G.hunger+50);m("status-msg","餵了烤肉！飽食大回！");an("happy");}},snack:{name:"糖果",icon:"🍬",desc:"心情+40",ef(){G.mood=Math.min(100,G.mood+40);m("status-msg","餵了糖果！心情好！");an("happy");}},potion:{name:"急救藥",icon:"💊",desc:"HP恢復50%",ef(){G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.5));m("status-msg","使用急救藥！HP大回！");}},vitamin:{name:"維他命",icon:"⭐",desc:"EXP+30",ef(){G.xp+=30;m("status-msg","吃了維他命！+30 EXP！");bEl();}}};
 
 // ===== 存檔 =====
-const HPH=12,MPH=8,HPHP=5,SPM=5,K="digi_v10";
+const HPH=12,MPH=8,HPHP=5,SPM=5,K="digibattle";
 function dG(){return{monId:"botamon",hp:40,maxHp:40,xp:0,wins:0,steps:0,sp:0,hunger:80,mood:80,lastSeen:Date.now(),bag:{meat:3,snack:3,potion:2,vitamin:1}};}
 let G=dG();
 function sv(){try{G.lastSeen=Date.now();localStorage.setItem(K,JSON.stringify(G));const e=document.getElementById("save-status2");if(e){e.textContent="✓ 已存檔";setTimeout(()=>{e.textContent="✓ 自動存檔";},1200);}}catch(e){}}
