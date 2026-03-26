@@ -5,116 +5,138 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#2e3a4a">
+<meta name="theme-color" content="#1a2230">
 <title>數碼對戰</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:#1a2230;}
-body{display:flex;justify-content:center;align-items:flex-start;padding:12px 0;min-height:100vh;}
-#game{font-family:'Press Start 2P',monospace;font-size:12px;background:#2e3a4a;color:#e8f0ff;width:100%;max-width:420px;min-height:100vh;padding:16px;user-select:none;}
-.screen{display:none;flex-direction:column;gap:12px;}.screen.active{display:flex;}
-.lcd{border:3px solid #4a7a4a;border-radius:8px;padding:12px;text-align:center;min-height:148px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative;overflow:hidden;}
-.lcd-bg{position:absolute;inset:0;z-index:0;}
-.lcd-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
-.mon-display{width:88px;height:88px;animation:idle 1.2s ease-in-out infinite;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.6));}
-@keyframes idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.mon-display.shake{animation:shake 0.4s ease-in-out;}
-.mon-display.happy{animation:happy 0.5s ease-in-out 3;}
+html,body{height:100%;background:#1a2230;overflow:hidden;}
+#game{font-family:'Press Start 2P',monospace;background:#2e3a4a;color:#e8f0ff;width:100%;max-width:430px;height:100dvh;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;}
+.screen{display:none;flex-direction:column;height:100%;}.screen.active{display:flex;}
+.top-zone{flex-shrink:0;display:flex;flex-direction:column;gap:8px;padding:8px 10px 0;}
+.zone-monster{height:170px;border:3px solid #4a7a4a;border-radius:10px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.zone-monster .lbg{position:absolute;inset:0;z-index:0;}
+.mon-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.mon-svg{width:88px;height:88px;animation:idle 1.2s ease-in-out infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.7));}
+@keyframes idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.mon-svg.shake{animation:shake 0.4s ease-in-out;}
+.mon-svg.happy{animation:happy 0.5s ease-in-out 3;}
 @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
-@keyframes happy{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
-.name-tag{font-size:11px;color:#88ffaa;}
-.stage-tag{font-size:9px;color:#ffcc44;}
-.stat-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
-.stat-row-label{font-size:9px;color:#99bbff;width:68px;flex-shrink:0;}
-.stat-row-val{font-size:8px;width:46px;flex-shrink:0;text-align:right;}
-.bar-wrap{flex:1;height:9px;background:#0f1a0f;border:1px solid #4a7a4a;border-radius:5px;overflow:hidden;}
-.bar-fill{height:100%;border-radius:5px;transition:width 0.5s;}
-.hp-c{background:#44ff88;}.xp-c{background:#4488ff;}.sp-c{background:#cc44ff;}.hunger-c{background:#ffaa22;}.mood-c{background:#ff88cc;}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;text-align:center;}
-.stat-box{background:#1e2e40;border:1px solid #2a3a55;border-radius:5px;padding:5px 3px;}
-.stat-box .val{font-size:11px;color:#fff;margin-top:3px;}
-.stat-box .lbl{color:#88aacc;font-size:8px;}
-.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.btn-row.single{grid-template-columns:1fr;}
-button{font-family:'Press Start 2P',monospace;font-size:11px;padding:12px 8px;border-radius:8px;cursor:pointer;transition:all 0.12s;border:none;background:#2255aa;color:#fff;box-shadow:0 4px 0 #0a2255,0 0 0 2px #4488dd;line-height:1.4;-webkit-tap-highlight-color:transparent;}
-button:hover{background:#3366cc;transform:translateY(-1px);}
-button:active{transform:translateY(3px);}
-button:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none;background:#1a2a3a;color:#667788;}
-button.danger{background:#992222;color:#ffdddd;box-shadow:0 4px 0 #440000,0 0 0 2px #dd4444;}
-button.danger:hover{background:#bb3333;}
-button.success{background:#226633;color:#ccffdd;box-shadow:0 4px 0 #0a2211,0 0 0 2px #44bb66;}
-button.success:hover{background:#2d8844;}
-button.sp-btn{background:#551188;color:#ee99ff;box-shadow:0 4px 0 #220044,0 0 0 2px #aa44ff;}
-button.sp-btn:hover{background:#771199;}
-button.action-btn{background:#1a3355;color:#ffee44;box-shadow:0 4px 0 #0a1a2a,0 0 0 2px #ffcc22;}
-button.action-btn:hover{background:#224466;color:#ffff88;transform:translateY(-1px);}
-button.item-btn{background:#2a1a3a;color:#ffccff;box-shadow:0 4px 0 #110822,0 0 0 2px #cc66ff;font-size:10px;padding:9px 6px;}
-button.item-btn:hover{background:#3a2a4a;transform:translateY(-1px);}
-.msg-box{background:#1a2a3a;border:2px solid #2a4060;border-radius:6px;padding:9px 11px;font-size:10px;color:#cce0ff;min-height:40px;line-height:2;}
-.section-title{font-size:10px;color:#7799bb;border-bottom:1px solid #2a3a50;padding-bottom:5px;}
-.nav-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
-.nav-tab{font-family:'Press Start 2P',monospace;font-size:9px;background:#1a2a3a;color:#aabbcc;border:2px solid #2a3a50;border-radius:6px;padding:8px 3px;cursor:pointer;text-align:center;transition:all 0.12s;-webkit-tap-highlight-color:transparent;}
+@keyframes happy{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.mon-name{font-size:11px;color:#88ffaa;}
+.mon-stage{font-size:9px;color:#ffcc44;}
+.warn-strip{position:absolute;bottom:5px;left:6px;right:6px;z-index:2;font-size:8px;text-align:center;padding:3px 5px;border-radius:4px;animation:bl2 1s step-end infinite;}
+@keyframes bl2{0%,100%{opacity:1}50%{opacity:0.3}}
+.wh{background:#2a1500;color:#ffaa44;border:1px solid #ff8822;}
+.wm{background:#1a0a22;color:#ff88cc;border:1px solid #cc44aa;bottom:22px;}
+.zone-stats{background:#162030;border:2px solid #2a3a50;border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;}
+.sr{display:flex;align-items:center;gap:6px;}
+.sl{font-size:8px;color:#99bbff;width:58px;flex-shrink:0;}
+.sv{font-size:8px;width:44px;flex-shrink:0;text-align:right;}
+.bw{flex:1;height:9px;background:#0a1418;border:1px solid #2a4a3a;border-radius:5px;overflow:hidden;}
+.bf{height:100%;border-radius:5px;transition:width 0.5s;}
+.hc{background:#44ff88;}.nc{background:#ffaa22;}.mc{background:#ff88cc;}.xc{background:#4488ff;}.sc{background:#cc44ff;}
+.sng{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:2px;}
+.sb{background:#0e1c28;border:1px solid #2a3a55;border-radius:5px;padding:5px 2px;text-align:center;}
+.sb .v{font-size:11px;color:#fff;margin-top:2px;}
+.sb .l{color:#6688aa;font-size:7px;}
+.content-zone{flex:1;overflow:hidden;padding:8px 10px 6px;position:relative;}
+.tab-content{display:none;flex-direction:column;gap:7px;height:100%;overflow-y:auto;}
+.tab-content.active{display:flex;}
+.bot-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:7px 10px 12px;background:#1a2535;border-top:2px solid #2a3a50;flex-shrink:0;}
+.nav-tab{font-family:'Press Start 2P',monospace;font-size:11px;background:#162030;color:#7799bb;border:2px solid #2a3a50;border-radius:8px;padding:12px 2px;cursor:pointer;text-align:center;transition:all 0.12s;-webkit-tap-highlight-color:transparent;line-height:1.5;}
 .nav-tab.active{background:#1a3a5a;color:#fff;border-color:#4488cc;}
-.nav-tab:hover{color:#fff;}
-.warn-bar{font-size:9px;text-align:center;padding:6px;border-radius:6px;animation:blink2 1s step-end infinite;}
-@keyframes blink2{0%,100%{opacity:1}50%{opacity:0.4}}
-.warn-hunger{background:#2a1500;color:#ffaa44;border:1px solid #ff8822;}
-.warn-mood{background:#1a0a22;color:#ff88cc;border:1px solid #cc44aa;}
-.bag-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.bag-card{background:#1a2a3a;border:2px solid #2a3a55;border-radius:8px;padding:10px;text-align:center;}
-.bag-icon{font-size:26px;margin-bottom:4px;}
-.bag-name{font-size:9px;color:#ccddff;margin-bottom:2px;}
-.bag-desc{font-size:8px;color:#7799aa;line-height:1.5;margin-bottom:5px;}
-.bag-cnt{font-size:10px;color:#ffcc44;margin-bottom:5px;}
-.evo-card{background:#1a2a3a;border:2px solid #2a3a55;border-radius:6px;padding:9px;text-align:center;cursor:pointer;transition:all 0.2s;}
-.evo-card:hover,.evo-card:active{border-color:#88ccff;background:#1e2e44;}
-.evo-card.selected{border-color:#44aaff;background:#102030;}
-.evo-card .evo-name{font-size:9px;color:#88ccff;margin-top:5px;}
-.evo-card .evo-req{font-size:8px;color:#7799aa;margin-top:2px;}
-.enemy-btn{font-family:'Press Start 2P',monospace;font-size:10px;background:#1a2a3a;color:#eef4ff;border:2px solid #2a3a55;border-radius:7px;padding:10px;cursor:pointer;text-align:left;width:100%;box-shadow:0 3px 0 #0a1020;transition:all 0.12s;-webkit-tap-highlight-color:transparent;}
-.enemy-btn:hover,.enemy-btn:active{background:#1e2e44;border-color:#6688cc;}
-.save-indicator{font-size:8px;color:#66aa66;text-align:right;}
-#battle-screen{background:#1a2535;border-radius:10px;padding:12px;}
-.battle-arena{border:3px solid #2a3a55;border-radius:10px;position:relative;height:205px;overflow:hidden;}
-.arena-bg{position:absolute;inset:0;z-index:0;}
-.fw{position:absolute;bottom:26px;display:flex;flex-direction:column;align-items:center;gap:3px;z-index:2;}
+.nav-tab:active{transform:scale(0.96);}
+.br{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.br.s{grid-template-columns:1fr;}
+button{font-family:'Press Start 2P',monospace;font-size:12px;padding:13px 8px;border-radius:8px;cursor:pointer;transition:transform 0.1s;border:none;background:#1e3a60;color:#fff;box-shadow:0 4px 0 #0a1a30,0 0 0 2px #3a6aaa;line-height:1.4;-webkit-tap-highlight-color:transparent;width:100%;}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #0a1a30,0 0 0 2px #3a6aaa;}
+button:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none;background:#162030;color:#445566;}
+button.g{background:#1a5530;color:#ccffdd;box-shadow:0 4px 0 #0a2215,0 0 0 2px #44aa66;}
+button.g:active{box-shadow:0 1px 0 #0a2215,0 0 0 2px #44aa66;}
+button.y{background:#1a3355;color:#ffee44;box-shadow:0 4px 0 #0a1a2a,0 0 0 2px #ffcc22;}
+button.y:active{box-shadow:0 1px 0 #0a1a2a,0 0 0 2px #ffcc22;}
+button.r{background:#551515;color:#ffdddd;box-shadow:0 4px 0 #220000,0 0 0 2px #cc3333;}
+button.r:active{box-shadow:0 1px 0 #220000,0 0 0 2px #cc3333;}
+button.p{background:#3a1060;color:#ee99ff;box-shadow:0 4px 0 #160030,0 0 0 2px #9933ff;}
+button.p:active{box-shadow:0 1px 0 #160030,0 0 0 2px #9933ff;}
+button.gps-on{background:#0a3322;color:#44ffaa;box-shadow:0 4px 0 #041810,0 0 0 2px #22cc77;font-size:11px;}
+button.gps-on:active{box-shadow:0 1px 0 #041810,0 0 0 2px #22cc77;}
+button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px #8833cc;font-size:11px;padding:10px 6px;}
+.mb{background:#0e1c28;border:2px solid #2a4060;border-radius:7px;padding:8px 11px;font-size:10px;color:#cce0ff;line-height:1.9;flex-shrink:0;}
+.st{font-size:9px;color:#6688aa;border-bottom:1px solid #2a3a50;padding-bottom:5px;flex-shrink:0;}
+.si{font-size:8px;color:#447744;text-align:right;padding:4px 10px 0;flex-shrink:0;}
+
+/* GPS 狀態列 */
+.gps-bar{
+  display:flex;align-items:center;gap:8px;
+  background:#0a1c18;border:2px solid #1a3a2a;border-radius:8px;
+  padding:8px 12px;flex-shrink:0;
+}
+.gps-dot{width:10px;height:10px;border-radius:50%;background:#334;flex-shrink:0;transition:background 0.3s;}
+.gps-dot.searching{background:#ffaa22;animation:pulse 1s ease-in-out infinite;}
+.gps-dot.active{background:#44ff88;}
+.gps-dot.error{background:#ff4444;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.gps-info{flex:1;display:flex;flex-direction:column;gap:2px;}
+.gps-status{font-size:9px;color:#88aacc;}
+.gps-meter{font-size:10px;color:#44ffaa;}
+.gps-toggle-btn{font-family:'Press Start 2P',monospace;font-size:9px;padding:7px 10px;border-radius:6px;cursor:pointer;border:none;background:#1a3322;color:#66ddaa;box-shadow:0 3px 0 #081510,0 0 0 1px #336644;-webkit-tap-highlight-color:transparent;flex-shrink:0;transition:all 0.1s;width:auto;}
+.gps-toggle-btn:active{transform:translateY(2px);}
+.gps-toggle-btn.on{background:#0d2e1e;color:#44ffaa;box-shadow:0 3px 0 #041208,0 0 0 1px #22aa55;}
+
+.bg-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.bc{background:#162030;border:2px solid #2a3a55;border-radius:8px;padding:10px;text-align:center;}
+.bi{font-size:24px;margin-bottom:3px;}
+.bn{font-size:9px;color:#ccddff;margin-bottom:2px;}
+.bd{font-size:8px;color:#6688aa;line-height:1.5;margin-bottom:4px;}
+.bct{font-size:10px;color:#ffcc44;margin-bottom:5px;}
+.eg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ec{background:#162030;border:2px solid #2a3a55;border-radius:7px;padding:9px;text-align:center;cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.ec:active,.ec.sel{border-color:#44aaff;background:#0e2040;}
+.ec .en{font-size:9px;color:#88ccff;margin-top:4px;}
+.ec .er{font-size:8px;color:#6688aa;margin-top:2px;}
+.eb{font-family:'Press Start 2P',monospace;font-size:10px;background:#162030;color:#ddeeff;border:2px solid #2a3a55;border-radius:7px;padding:11px 10px;cursor:pointer;text-align:left;width:100%;box-shadow:0 3px 0 #08101a;-webkit-tap-highlight-color:transparent;}
+.eb:active{background:#1e2e44;transform:translateY(2px);}
+#title-screen{background:#1a2535;align-items:center;justify-content:center;gap:18px;padding:30px 20px;}
+.gt{font-size:22px;color:#88ccff;letter-spacing:3px;line-height:1.8;text-align:center;}
+.blink{animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+#battle-screen{background:#1a2535;padding:10px;gap:8px;}
+.ba{flex:0 0 195px;border:3px solid #2a3a55;border-radius:10px;position:relative;overflow:hidden;}
+.abg{position:absolute;inset:0;z-index:0;}
+.fw{position:absolute;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:3px;z-index:2;}
 #fw-my{left:8px;}#fw-en{right:8px;}
 .fsv{width:74px;height:74px;display:block;filter:drop-shadow(0 4px 6px rgba(0,0,0,0.7));}
 #fw-en .fsv{transform:scaleX(-1);}
-.flabel{font-size:8px;color:#fff;text-shadow:1px 1px 3px #000;white-space:nowrap;}
-.hps{width:74px;height:7px;background:#0a1a0a;border:1px solid #4a7a4a;border-radius:4px;overflow:hidden;margin-bottom:1px;}
-.sps{width:74px;height:4px;background:#1a0a2a;border:1px solid #6622aa;border-radius:3px;overflow:hidden;}
-.hpi{height:100%;border-radius:4px;transition:width 0.4s;}
-.myhp{background:#44ff88;}.enhp{background:#ff5544;}
-.spi{height:100%;border-radius:3px;background:#cc44ff;transition:width 0.4s;}
+.fl{font-size:8px;color:#fff;text-shadow:1px 1px 3px #000;white-space:nowrap;}
+.hs{width:74px;height:7px;background:#0a1a0a;border:1px solid #4a7a4a;border-radius:4px;overflow:hidden;margin-bottom:1px;}
+.ss2{width:74px;height:4px;background:#1a0a2a;border:1px solid #6622aa;border-radius:3px;overflow:hidden;}
+.hi{height:100%;border-radius:4px;transition:width 0.4s;}
+.mh{background:#44ff88;}.eh{background:#ff5544;}
+.si2{height:100%;border-radius:3px;background:#cc44ff;transition:width 0.4s;}
 .efx{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:46px;opacity:0;z-index:3;}
 @keyframes sa{0%{opacity:1;transform:scale(0.5) rotate(-20deg)}50%{opacity:1;transform:scale(1.4)}100%{opacity:0;transform:scale(2)}}
-@keyframes ba{0%{opacity:1;transform:scale(0.3)}40%{opacity:1;transform:scale(1.6)}100%{opacity:0;transform:scale(2.4)}}
+@keyframes ba2{0%{opacity:1;transform:scale(0.3)}40%{opacity:1;transform:scale(1.6)}100%{opacity:0;transform:scale(2.4)}}
 @keyframes spa{0%{opacity:1;transform:scale(0.2) rotate(0)}50%{opacity:1;transform:scale(1.4) rotate(180deg)}100%{opacity:0;transform:scale(2.2) rotate(360deg)}}
 @keyframes ha{0%{opacity:1;transform:translateX(0)}50%{opacity:1;transform:translateX(18px) scale(1.3)}100%{opacity:0;transform:translateX(36px)}}
 @keyframes mya{0%,100%{transform:translateX(0)}50%{transform:translateX(24px)}}
 @keyframes ena{0%,100%{transform:translateX(0)}50%{transform:translateX(-24px)}}
 @keyframes hf{0%,100%{opacity:1}30%,70%{opacity:0.1}}
-.blog{background:#0d1520;border:2px solid #2a3a50;border-radius:6px;padding:6px 9px;font-size:9px;color:#aabbcc;max-height:78px;overflow-y:auto;line-height:2;white-space:pre-wrap;}
-#result-screen{background:#1a2535;border-radius:10px;padding:18px;text-align:center;gap:12px;}
-.rtitle{font-size:15px;letter-spacing:2px;}
-.rwin{color:#88ffaa;}.rlose{color:#ff8888;}
-.rsprite{width:100px;height:100px;margin:0 auto;animation:idle 1.2s ease-in-out infinite;}
-.rstats{background:#111e2d;border:2px solid #2a3a55;border-radius:8px;padding:11px;font-size:9px;color:#aabbcc;line-height:2.2;text-align:left;}
-.title-screen{text-align:center;gap:16px;}
-.gtitle{font-size:14px;color:#88ccff;letter-spacing:2px;line-height:2;}
-.blink{animation:blink 1s step-end infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.bl{background:#0d1520;border:2px solid #2a3a50;border-radius:6px;padding:6px 9px;font-size:9px;color:#aabbcc;height:70px;overflow-y:auto;line-height:2;white-space:pre-wrap;flex-shrink:0;}
+.bbt{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex-shrink:0;}
+.bbt button{font-size:12px;padding:13px 6px;}
+#result-screen{background:#1a2535;align-items:center;justify-content:center;padding:24px 16px;gap:14px;}
+.rt{font-size:16px;letter-spacing:2px;}.rw{color:#88ffaa;}.rl{color:#ff8888;}
+.rs2{width:110px;height:110px;animation:idle 1.2s ease-in-out infinite;}
+.rst{background:#111e2d;border:2px solid #2a3a55;border-radius:8px;padding:12px;font-size:9px;color:#aabbcc;line-height:2.4;width:100%;}
 </style>
 </head>
 <body>
 <div id="game">
 
-<!-- 標題畫面 -->
-<div id="title-screen" class="screen active title-screen">
-  <div class="gtitle">數碼<br>對戰</div>
-  <svg width="88" height="88" viewBox="0 0 100 100" style="margin:0 auto;animation:idle 1.2s ease-in-out infinite;">
+<div id="title-screen" class="screen active">
+  <div class="gt">數碼<br>對戰</div>
+  <svg width="96" height="96" viewBox="0 0 100 100" style="animation:idle 1.2s ease-in-out infinite;">
     <circle cx="50" cy="50" r="28" fill="#111"/>
     <circle cx="44" cy="46" r="6" fill="#fff"/><circle cx="44" cy="46" r="3.5" fill="#cc0000"/>
     <circle cx="58" cy="44" r="5" fill="#fff"/><circle cx="58" cy="44" r="3" fill="#cc0000"/>
@@ -124,138 +146,146 @@ button.item-btn:hover{background:#3a2a4a;transform:translateY(-1px);}
     <line x1="22" y1="50" x2="10" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/>
     <line x1="78" y1="50" x2="90" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/>
   </svg>
-  <div style="font-size:9px;color:#7799bb;">v0.8 養成版</div>
-  <div class="save-indicator" id="save-status"></div>
-  <button class="success" onclick="startGame()" style="font-size:13px;padding:13px;">▶ 開始遊戲</button>
-  <button onclick="newGame()" style="font-size:10px;padding:8px;color:#ffee44;">↺ 重新開始</button>
-  <div style="font-size:9px;color:#5577aa;" class="blink">按下開始</div>
+  <div id="save-status" style="font-size:9px;color:#44aa44;"></div>
+  <button class="g" onclick="startGame()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
+  <button onclick="newGame()" style="font-size:10px;padding:10px;color:#ffee44;max-width:240px;">↺ 重新開始</button>
+  <div style="font-size:9px;color:#445566;" class="blink">v0.10</div>
 </div>
 
-<!-- 主畫面 -->
 <div id="main-screen" class="screen">
-  <div class="nav-tabs">
+  <div class="top-zone">
+    <div class="si" id="save-status2">✓ 自動存檔</div>
+    <div class="zone-monster">
+      <svg class="lbg" viewBox="0 0 300 170" preserveAspectRatio="xMidYMid slice" id="lcd-bg-svg"></svg>
+      <div class="mon-inner">
+        <div class="mon-stage" id="stage-label">幼年期I</div>
+        <svg id="my-sprite" class="mon-svg" viewBox="0 0 100 100"></svg>
+        <div class="mon-name" id="my-name">巴達獸</div>
+      </div>
+      <div id="warn-hunger" class="warn-strip wh" style="display:none;">⚠ 肚子餓了！快去背包餵食！</div>
+      <div id="warn-mood" class="warn-strip wm" style="display:none;">⚠ 心情很差！玩耍或餵糖果！</div>
+    </div>
+    <div class="zone-stats">
+      <div class="sr"><span class="sl">生命值</span><div class="bw"><div class="bf hc" id="hp-bar" style="width:100%"></div></div><span class="sv" id="hp-text" style="color:#88ffaa;font-size:8px;"></span></div>
+      <div class="sr"><span class="sl">飽食度</span><div class="bw"><div class="bf nc" id="hunger-bar" style="width:80%"></div></div><span class="sv" id="hunger-text" style="color:#ffaa22;font-size:8px;"></span></div>
+      <div class="sr"><span class="sl">心情值</span><div class="bw"><div class="bf mc" id="mood-bar" style="width:80%"></div></div><span class="sv" id="mood-text" style="color:#ff88cc;font-size:8px;"></span></div>
+      <div class="sr"><span class="sl">經驗值</span><div class="bw"><div class="bf xc" id="xp-bar" style="width:0%"></div></div><span class="sv"></span></div>
+      <div class="sr"><span class="sl">必殺能量</span><div class="bw" style="background:#1a0a2a;border-color:#6622aa;"><div class="bf sc" id="sp-bar" style="width:0%"></div></div><span class="sv" id="sp-text" style="color:#cc88ff;font-size:8px;"></span></div>
+      <div class="sng">
+        <div class="sb"><div class="l">等級</div><div class="v" id="stat-lv">1</div></div>
+        <div class="sb"><div class="l">攻擊</div><div class="v" id="stat-atk">8</div></div>
+        <div class="sb"><div class="l">勝場</div><div class="v" id="stat-win">0</div></div>
+        <div class="sb"><div class="l">公尺</div><div class="v" id="stat-steps">0</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-zone">
+
+    <!-- 狀態 tab -->
+    <div id="tab-status" class="tab-content active">
+      <!-- GPS 狀態列 -->
+      <div class="gps-bar">
+        <div class="gps-dot" id="gps-dot"></div>
+        <div class="gps-info">
+          <div class="gps-status" id="gps-status">GPS 未啟動</div>
+          <div class="gps-meter" id="gps-meter">今日：0 公尺</div>
+        </div>
+        <button class="gps-toggle-btn" id="gps-toggle-btn" onclick="toggleGPS()">開啟</button>
+      </div>
+      <div class="mb" id="status-msg">開啟 GPS 後帶著手機走路，自動累積公尺數！</div>
+      <div class="br">
+        <button class="y" onclick="doTrain()">⚔ 訓練</button>
+        <button class="y" onclick="doPlay()">♪ 玩耍</button>
+      </div>
+    </div>
+
+    <!-- 背包 tab -->
+    <div id="tab-bag" class="tab-content">
+      <div class="st">背包道具</div>
+      <div class="bg-g" id="bag-grid"></div>
+      <div class="mb" id="bag-msg">選擇道具使用！</div>
+    </div>
+
+    <!-- 對戰 tab -->
+    <div id="tab-battle" class="tab-content">
+      <div class="st">選擇對手</div>
+      <div id="enemy-list" style="display:flex;flex-direction:column;gap:7px;"></div>
+      <div class="mb" id="battle-msg">選擇對手開始！</div>
+    </div>
+
+    <!-- 進化 tab -->
+    <div id="tab-evolve" class="tab-content">
+      <div class="st">進化路線</div>
+      <div class="eg" id="evo-list"></div>
+      <div class="mb" id="evo-msg">達成條件即可進化！</div>
+      <div class="br s">
+        <button class="g" onclick="doEvolve()" id="evo-btn" disabled style="font-size:13px;padding:14px;">★ 進化！</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bot-nav">
     <div class="nav-tab active" onclick="showTab('status')">狀態</div>
     <div class="nav-tab" onclick="showTab('bag')">背包</div>
     <div class="nav-tab" onclick="showTab('battle')">對戰</div>
     <div class="nav-tab" onclick="showTab('evolve')">進化</div>
   </div>
-  <div class="save-indicator" id="save-status2">✓ 自動存檔</div>
-
-  <!-- 狀態 -->
-  <div id="tab-status" style="display:flex;flex-direction:column;gap:9px;">
-    <div id="warn-hunger" class="warn-bar warn-hunger" style="display:none;">⚠ 肚子餓了！快去背包餵食！</div>
-    <div id="warn-mood" class="warn-bar warn-mood" style="display:none;">⚠ 心情很差！去背包餵糖果或玩耍！</div>
-    <div class="lcd">
-      <svg class="lcd-bg" viewBox="0 0 300 160" preserveAspectRatio="xMidYMid slice" id="lcd-bg-svg"></svg>
-      <div class="lcd-content">
-        <div class="stage-tag" id="stage-label">幼年期I</div>
-        <svg id="my-sprite" class="mon-display" viewBox="0 0 100 100"></svg>
-        <div class="name-tag" id="my-name">巴達獸</div>
-      </div>
-    </div>
-    <div>
-      <div class="stat-row"><span class="stat-row-label">生命值</span><div class="bar-wrap"><div class="bar-fill hp-c" id="hp-bar" style="width:100%"></div></div><span class="stat-row-val" id="hp-text" style="color:#88ffaa;font-size:8px;"></span></div>
-      <div class="stat-row"><span class="stat-row-label">飽食度</span><div class="bar-wrap"><div class="bar-fill hunger-c" id="hunger-bar" style="width:80%"></div></div><span class="stat-row-val" id="hunger-text" style="color:#ffaa22;font-size:8px;"></span></div>
-      <div class="stat-row"><span class="stat-row-label">心情值</span><div class="bar-wrap"><div class="bar-fill mood-c" id="mood-bar" style="width:80%"></div></div><span class="stat-row-val" id="mood-text" style="color:#ff88cc;font-size:8px;"></span></div>
-      <div class="stat-row"><span class="stat-row-label">經驗值</span><div class="bar-wrap"><div class="bar-fill xp-c" id="xp-bar" style="width:0%"></div></div><span class="stat-row-val"></span></div>
-      <div class="stat-row"><span class="stat-row-label">必殺能量</span><div class="bar-wrap" style="background:#1a0a2a;border-color:#6622aa;"><div class="bar-fill sp-c" id="sp-bar" style="width:0%"></div></div><span class="stat-row-val" id="sp-text" style="color:#cc88ff;font-size:8px;"></span></div>
-    </div>
-    <div class="stats-grid">
-      <div class="stat-box"><div class="lbl">等級</div><div class="val" id="stat-lv">1</div></div>
-      <div class="stat-box"><div class="lbl">攻擊</div><div class="val" id="stat-atk">8</div></div>
-      <div class="stat-box"><div class="lbl">勝場</div><div class="val" id="stat-win">0</div></div>
-      <div class="stat-box"><div class="lbl">步數</div><div class="val" id="stat-steps">0</div></div>
-    </div>
-    <div class="msg-box" id="status-msg">你的數碼獸正在等待冒險...</div>
-    <div class="btn-row">
-      <button class="action-btn" onclick="doTrain()">⚔ 訓練</button>
-      <button class="action-btn" onclick="doPlay()">♪ 玩耍</button>
-    </div>
-    <div class="btn-row single">
-      <button onclick="doStepCheck()" style="color:#88ffaa;">👟 更新步數</button>
-    </div>
-  </div>
-
-  <!-- 背包 -->
-  <div id="tab-bag" style="display:none;flex-direction:column;gap:10px;">
-    <div class="section-title">背包道具</div>
-    <div class="bag-grid" id="bag-grid"></div>
-    <div class="msg-box" id="bag-msg">選擇道具使用！</div>
-  </div>
-
-  <!-- 對戰 -->
-  <div id="tab-battle" style="display:none;flex-direction:column;gap:8px;">
-    <div class="section-title">選擇對手</div>
-    <div id="enemy-list" style="display:flex;flex-direction:column;gap:7px;"></div>
-    <div class="msg-box" id="battle-msg">選擇對手開始！</div>
-  </div>
-
-  <!-- 進化 -->
-  <div id="tab-evolve" style="display:none;flex-direction:column;gap:8px;">
-    <div class="section-title">進化路線</div>
-    <div id="evo-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
-    <div class="msg-box" id="evo-msg">達成條件即可進化！</div>
-    <div class="btn-row single" style="margin-top:4px;">
-      <button class="success" onclick="doEvolve()" id="evo-btn" disabled style="font-size:12px;padding:13px;color:#ccffdd;">★ 進化！</button>
-    </div>
-  </div>
 </div>
 
-<!-- 戰鬥畫面 -->
 <div id="battle-screen" class="screen">
-  <div class="battle-arena">
-    <svg class="arena-bg" id="arena-bg-svg" viewBox="0 0 320 205" preserveAspectRatio="xMidYMid slice"></svg>
+  <div class="ba">
+    <svg class="abg" id="arena-bg-svg" viewBox="0 0 320 195" preserveAspectRatio="xMidYMid slice"></svg>
     <div class="fw" id="fw-my">
-      <div class="hps"><div class="hpi myhp" id="my-hp-inner" style="width:100%"></div></div>
-      <div class="sps"><div class="spi" id="my-sp-inner" style="width:0%"></div></div>
+      <div class="hs"><div class="hi mh" id="my-hp-inner" style="width:100%"></div></div>
+      <div class="ss2"><div class="si2" id="my-sp-inner" style="width:0%"></div></div>
       <svg id="my-fighter-svg" class="fsv" viewBox="0 0 100 100"></svg>
-      <div class="flabel" id="my-fighter-label">我方</div>
+      <div class="fl" id="my-fighter-label">我方</div>
     </div>
     <div class="fw" id="fw-en">
-      <div class="hps"><div class="hpi enhp" id="en-hp-inner" style="width:100%"></div></div>
-      <div class="sps" style="opacity:0.4;"><div class="spi" id="en-sp-inner" style="width:0%"></div></div>
+      <div class="hs"><div class="hi eh" id="en-hp-inner" style="width:100%"></div></div>
+      <div class="ss2" style="opacity:0.4;"><div class="si2" id="en-sp-inner" style="width:0%"></div></div>
       <svg id="en-fighter-svg" class="fsv" viewBox="0 0 100 100"></svg>
-      <div class="flabel" id="en-fighter-label">敵方</div>
+      <div class="fl" id="en-fighter-label">敵方</div>
     </div>
     <div class="efx" id="effect-layer"></div>
   </div>
-  <div class="blog" id="battle-log"></div>
-  <div class="btn-row" id="battle-btns">
-    <button onclick="battleAction('attack')" id="btn-attack" style="font-size:12px;padding:11px 6px;">⚔ 攻擊</button>
-    <button class="sp-btn" onclick="battleAction('special')" id="btn-special" style="font-size:11px;padding:11px 6px;">★ 必殺<br><span id="sp-charge-text" style="font-size:7px;color:#aa66cc;">0/5</span></button>
+  <div class="bl" id="battle-log"></div>
+  <div class="bbt" id="battle-btns">
+    <button onclick="battleAction('attack')" id="btn-attack">⚔ 攻擊</button>
+    <button class="p" onclick="battleAction('special')" id="btn-special">★ 必殺<br><span id="sp-charge-text" style="font-size:7px;color:#aa66cc;">0/5</span></button>
   </div>
-  <div class="btn-row single" id="flee-btn-wrap">
-    <button class="danger" onclick="fleeBattle()" style="font-size:11px;">↩ 逃跑</button>
+  <div class="br s" id="flee-btn-wrap">
+    <button class="r" onclick="fleeBattle()" style="font-size:11px;padding:12px;">↩ 逃跑</button>
   </div>
 </div>
 
-<!-- 結果畫面 -->
 <div id="result-screen" class="screen">
-  <div class="rtitle" id="result-title">勝利！</div>
-  <svg id="result-sprite" class="rsprite" viewBox="0 0 100 100"></svg>
-  <div class="rstats" id="result-stats"></div>
-  <div class="btn-row single">
-    <button class="success" onclick="backToMain()" style="font-size:12px;padding:13px;color:#ccffdd;">▶ 繼續冒險</button>
-  </div>
+  <div class="rt" id="result-title">勝利！</div>
+  <svg id="result-sprite" class="rs2" viewBox="0 0 100 100"></svg>
+  <div class="rst" id="result-stats"></div>
+  <button class="g" onclick="backToMain()" style="font-size:12px;padding:14px;max-width:300px;">▶ 繼續冒險</button>
 </div>
 
 </div>
 <script>
+// ===== 場景 =====
 const BG={
-grassland:`<rect width="320" height="205" fill="#4a8a3a"/><rect y="132" width="320" height="73" fill="#3a6a2a"/><rect y="124" width="320" height="11" fill="#5aaa4a"/><ellipse cx="60" cy="74" rx="36" ry="26" fill="#fff" opacity="0.7"/><ellipse cx="218" cy="56" rx="30" ry="20" fill="#fff" opacity="0.6"/><circle cx="98" cy="27" r="12" fill="#ffee44" opacity="0.9"/>`,
-city:`<rect width="320" height="205" fill="#1a2030"/><rect x="0" y="74" width="42" height="131" fill="#252535"/><rect x="48" y="46" width="50" height="159" fill="#1e2840"/><rect x="153" y="37" width="56" height="168" fill="#1a2235"/><rect x="218" y="60" width="42" height="145" fill="#222840"/><rect x="52" y="50" width="7" height="6" fill="#ffee88" opacity="0.9"/><rect x="158" y="43" width="8" height="7" fill="#ffee88" opacity="0.9"/><rect y="132" width="320" height="73" fill="#111820"/>`,
-sewer:`<rect width="320" height="205" fill="#1a1a10"/><rect y="140" width="320" height="65" fill="#0f1408"/><rect y="134" width="320" height="10" fill="#2a2a18"/><rect x="0" y="17" width="18" height="188" fill="#222218"/><rect x="302" y="17" width="18" height="188" fill="#222218"/><rect x="27" y="17" width="13" height="122" fill="#1e1e14"/><rect x="146" y="17" width="13" height="112" fill="#1e1e14"/><circle cx="48" cy="56" r="3" fill="#88ff44" opacity="0.4"/>`,
-volcano:`<rect width="320" height="205" fill="#1a0800"/><polygon points="98,0 154,130 42,130" fill="#2a1008"/><polygon points="215,17 262,130 168,130" fill="#251008"/><ellipse cx="154" cy="7" rx="22" ry="12" fill="#ff4400" opacity="0.8"/><ellipse cx="154" cy="2" rx="8" ry="5" fill="#ffcc00" opacity="0.95"/><rect y="130" width="320" height="75" fill="#1a0500"/>`,
+grassland:`<rect width="320" height="195" fill="#4a8a3a"/><rect y="125" width="320" height="70" fill="#3a6a2a"/><rect y="118" width="320" height="10" fill="#5aaa4a"/><ellipse cx="60" cy="70" rx="35" ry="25" fill="#fff" opacity="0.7"/><ellipse cx="215" cy="52" rx="29" ry="19" fill="#fff" opacity="0.6"/><circle cx="96" cy="25" r="12" fill="#ffee44" opacity="0.9"/>`,
+city:`<rect width="320" height="195" fill="#1a2030"/><rect x="0" y="70" width="42" height="125" fill="#252535"/><rect x="48" y="42" width="50" height="153" fill="#1e2840"/><rect x="152" y="35" width="55" height="160" fill="#1a2235"/><rect x="216" y="56" width="42" height="139" fill="#222840"/><rect x="52" y="46" width="7" height="6" fill="#ffee88" opacity="0.9"/><rect x="157" y="40" width="8" height="7" fill="#ffee88" opacity="0.9"/><rect y="125" width="320" height="70" fill="#111820"/>`,
+sewer:`<rect width="320" height="195" fill="#1a1a10"/><rect y="132" width="320" height="63" fill="#0f1408"/><rect y="126" width="320" height="10" fill="#2a2a18"/><rect x="0" y="15" width="18" height="180" fill="#222218"/><rect x="302" y="15" width="18" height="180" fill="#222218"/><rect x="26" y="15" width="13" height="118" fill="#1e1e14"/><rect x="144" y="15" width="13" height="108" fill="#1e1e14"/><circle cx="47" cy="52" r="3" fill="#88ff44" opacity="0.4"/>`,
+volcano:`<rect width="320" height="195" fill="#1a0800"/><polygon points="96,0 152,125 40,125" fill="#2a1008"/><polygon points="213,15 260,125 166,125" fill="#251008"/><ellipse cx="152" cy="7" rx="21" ry="11" fill="#ff4400" opacity="0.8"/><ellipse cx="152" cy="2" rx="8" ry="5" fill="#ffcc00" opacity="0.95"/><rect y="125" width="320" height="70" fill="#1a0500"/>`,
 };
 const LCDBG={
-grassland:`<rect width="300" height="160" fill="#4a8a3a"/><rect y="100" width="300" height="60" fill="#3a6a2a"/><ellipse cx="48" cy="46" rx="32" ry="22" fill="#fff" opacity="0.6"/><circle cx="255" cy="19" r="12" fill="#ffee44" opacity="0.8"/>`,
-city:`<rect width="300" height="160" fill="#1a2030"/><rect x="52" y="23" width="46" height="137" fill="#1e2840"/><rect x="152" y="17" width="50" height="143" fill="#1a2235"/><rect y="100" width="300" height="60" fill="#111820"/><rect x="56" y="27" width="6" height="5" fill="#ffee88" opacity="0.9"/>`,
-sewer:`<rect width="300" height="160" fill="#1a1a10"/><rect y="106" width="300" height="54" fill="#0f1408"/><rect x="0" y="13" width="15" height="147" fill="#222218"/><rect x="27" y="13" width="11" height="94" fill="#1e1e14"/><circle cx="46" cy="46" r="3" fill="#88ff44" opacity="0.4"/>`,
-volcano:`<rect width="300" height="160" fill="#1a0800"/><polygon points="76,0 132,104 20,104" fill="#2a1008"/><polygon points="193,7 240,104 146,104" fill="#251008"/><rect y="104" width="300" height="56" fill="#0f0500"/><ellipse cx="76" cy="4" rx="17" ry="9" fill="#ff4400" opacity="0.8"/>`,
+grassland:`<rect width="300" height="170" fill="#4a8a3a"/><rect y="104" width="300" height="66" fill="#3a6a2a"/><ellipse cx="48" cy="48" rx="31" ry="21" fill="#fff" opacity="0.6"/><circle cx="253" cy="19" r="12" fill="#ffee44" opacity="0.8"/>`,
+city:`<rect width="300" height="170" fill="#1a2030"/><rect x="51" y="20" width="45" height="150" fill="#1e2840"/><rect x="151" y="14" width="49" height="156" fill="#1a2235"/><rect y="104" width="300" height="66" fill="#111820"/><rect x="55" y="24" width="6" height="5" fill="#ffee88" opacity="0.9"/>`,
+sewer:`<rect width="300" height="170" fill="#1a1a10"/><rect y="104" width="300" height="66" fill="#0f1408"/><rect x="0" y="10" width="15" height="160" fill="#222218"/><rect x="26" y="10" width="11" height="100" fill="#1e1e14"/><circle cx="45" cy="46" r="3" fill="#88ff44" opacity="0.4"/>`,
+volcano:`<rect width="300" height="170" fill="#1a0800"/><polygon points="75,0 130,104 20,104" fill="#2a1008"/><polygon points="191,7 238,104 144,104" fill="#251008"/><rect y="104" width="300" height="66" fill="#0f0500"/><ellipse cx="75" cy="4" rx="17" ry="9" fill="#ff4400" opacity="0.8"/>`,
 };
-const MSCENE={botamon:'grassland',koromon:'grassland',agumon:'grassland',gabumon:'grassland',greymon:'volcano',garurumon:'city',metalgreymon:'city',weregarurumon:'sewer',wargreymon:'volcano',omnimon:'city'};
-const ESCENE=['grassland','grassland','sewer','volcano','city'];
-const MSVG={
+const MSC={botamon:'grassland',koromon:'grassland',agumon:'grassland',gabumon:'grassland',greymon:'volcano',garurumon:'city',metalgreymon:'city',weregarurumon:'sewer',wargreymon:'volcano',omnimon:'city'};
+const ESC=['grassland','grassland','sewer','volcano','city'];
+const MS={
 botamon:`<circle cx="50" cy="50" r="28" fill="#111"/><circle cx="44" cy="46" r="6" fill="#fff"/><circle cx="44" cy="46" r="3.5" fill="#cc0000"/><circle cx="58" cy="44" r="5" fill="#fff"/><circle cx="58" cy="44" r="3" fill="#cc0000"/><path d="M38 58 Q50 68 62 58" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="43" y="58" width="4" height="6" rx="1" fill="#fff"/><rect x="50" y="59" width="4" height="7" rx="1" fill="#fff"/><line x1="22" y1="50" x2="10" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="78" y1="50" x2="90" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/>`,
 koromon:`<ellipse cx="50" cy="55" rx="26" ry="22" fill="#111"/><circle cx="50" cy="36" r="20" fill="#111"/><line x1="44" y1="18" x2="42" y2="8" stroke="#111" stroke-width="3"/><circle cx="42" cy="6" r="3" fill="#cc0000"/><line x1="52" y1="17" x2="54" y2="7" stroke="#111" stroke-width="3"/><circle cx="54" cy="5" r="3" fill="#cc0000"/><circle cx="43" cy="34" r="6" fill="#fff"/><circle cx="43" cy="34" r="3.5" fill="#cc0000"/><circle cx="57" cy="32" r="5" fill="#fff"/><circle cx="57" cy="32" r="3" fill="#cc0000"/><path d="M37 46 Q50 56 63 46" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="42" y="46" width="4" height="6" rx="1" fill="#fff"/><rect x="49" y="47" width="4" height="7" rx="1" fill="#fff"/><rect x="56" y="46" width="4" height="6" rx="1" fill="#fff"/>`,
 agumon:`<ellipse cx="50" cy="62" rx="20" ry="18" fill="#111"/><circle cx="50" cy="34" r="22" fill="#111"/><circle cx="41" cy="30" r="7" fill="#fff"/><circle cx="41" cy="30" r="4" fill="#cc0000"/><circle cx="59" cy="28" r="6" fill="#fff"/><circle cx="59" cy="28" r="3.5" fill="#cc0000"/><path d="M36 44 Q50 56 64 44" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="40" y="44" width="4" height="7" rx="1" fill="#fff"/><rect x="47" y="45" width="5" height="8" rx="1" fill="#fff"/><rect x="55" y="44" width="4" height="7" rx="1" fill="#fff"/><line x1="30" y1="58" x2="16" y2="52" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="70" y1="58" x2="84" y2="52" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="38" y1="76" x2="30" y2="92" stroke="#111" stroke-width="6" stroke-linecap="round"/><line x1="62" y1="76" x2="70" y2="92" stroke="#111" stroke-width="6" stroke-linecap="round"/>`,
@@ -267,268 +297,213 @@ weregarurumon:`<ellipse cx="50" cy="56" rx="26" ry="22" fill="#111"/><ellipse cx
 wargreymon:`<ellipse cx="50" cy="55" rx="24" ry="22" fill="#111"/><circle cx="50" cy="28" r="24" fill="#111"/><polygon points="50,6 44,0 50,4 56,0" fill="#cc0000"/><polygon points="28,14 18,8 26,18" fill="#111"/><polygon points="72,14 82,8 74,18" fill="#111"/><circle cx="38" cy="24" r="9" fill="#fff"/><circle cx="38" cy="24" r="6" fill="#cc0000"/><circle cx="64" cy="22" r="8" fill="#fff"/><circle cx="64" cy="22" r="5" fill="#cc0000"/><path d="M30 38 Q50 52 70 38" stroke="#cc0000" stroke-width="3.5" fill="none"/><rect x="35" y="38" width="6" height="10" rx="1" fill="#fff"/><rect x="44" y="39" width="7" height="12" rx="1" fill="#fff"/><rect x="54" y="38" width="7" height="10" rx="1" fill="#fff"/><line x1="26" y1="52" x2="6" y2="42" stroke="#111" stroke-width="8" stroke-linecap="round"/><line x1="74" y1="52" x2="94" y2="42" stroke="#111" stroke-width="8" stroke-linecap="round"/><line x1="36" y1="74" x2="24" y2="96" stroke="#111" stroke-width="9" stroke-linecap="round"/><line x1="64" y1="74" x2="76" y2="96" stroke="#111" stroke-width="9" stroke-linecap="round"/>`,
 omnimon:`<ellipse cx="50" cy="56" rx="22" ry="20" fill="#111"/><circle cx="50" cy="26" r="24" fill="#111"/><polygon points="50,4 44,0 50,2 56,0" fill="#cc0000"/><polygon points="32,8 22,2 30,12" fill="#111"/><polygon points="68,8 78,2 70,12" fill="#111"/><circle cx="37" cy="22" r="10" fill="#fff"/><circle cx="37" cy="22" r="6.5" fill="#cc0000"/><circle cx="65" cy="20" r="9" fill="#fff"/><circle cx="65" cy="20" r="6" fill="#cc0000"/><path d="M28 36 Q50 52 72 36" stroke="#cc0000" stroke-width="4" fill="none"/><rect x="33" y="36" width="7" height="11" rx="1" fill="#fff"/><rect x="43" y="37" width="8" height="13" rx="1" fill="#fff"/><rect x="54" y="36" width="7" height="11" rx="1" fill="#fff"/><line x1="28" y1="52" x2="4" y2="40" stroke="#111" stroke-width="9" stroke-linecap="round"/><line x1="72" y1="52" x2="96" y2="40" stroke="#111" stroke-width="9" stroke-linecap="round"/><line x1="36" y1="72" x2="22" y2="96" stroke="#111" stroke-width="10" stroke-linecap="round"/><line x1="64" y1="72" x2="78" y2="96" stroke="#111" stroke-width="10" stroke-linecap="round"/>`,
 };
-const ESVG={
+const ES={
 tenshi:`<circle cx="50" cy="50" r="25" fill="#111"/><ellipse cx="50" cy="22" rx="18" ry="6" fill="none" stroke="#cc0000" stroke-width="3"/><circle cx="42" cy="46" r="6" fill="#fff"/><circle cx="42" cy="46" r="3.5" fill="#cc0000"/><circle cx="58" cy="44" r="5" fill="#fff"/><circle cx="58" cy="44" r="3" fill="#cc0000"/><path d="M38 58 Q50 66 62 58" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="43" y="58" width="4" height="6" rx="1" fill="#fff"/><rect x="50" y="59" width="4" height="7" rx="1" fill="#fff"/>`,
 gabumon2:`<ellipse cx="50" cy="60" rx="22" ry="20" fill="#111"/><circle cx="50" cy="32" r="22" fill="#111"/><polygon points="38,12 34,2 42,10" fill="#111"/><polygon points="62,10 68,1 60,10" fill="#111"/><circle cx="40" cy="30" r="7" fill="#fff"/><circle cx="40" cy="30" r="4" fill="#cc0000"/><circle cx="60" cy="29" r="6" fill="#fff"/><circle cx="60" cy="29" r="3.5" fill="#cc0000"/><path d="M36 44 Q50 55 64 44" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="41" y="44" width="4" height="7" rx="1" fill="#fff"/><rect x="48" y="45" width="4" height="8" rx="1" fill="#fff"/><line x1="28" y1="60" x2="14" y2="54" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="72" y1="60" x2="86" y2="54" stroke="#111" stroke-width="5" stroke-linecap="round"/>`,
 tentomon:`<ellipse cx="50" cy="58" rx="20" ry="16" fill="#111"/><ellipse cx="50" cy="34" rx="18" ry="18" fill="#111"/><line x1="30" y1="38" x2="10" y2="24" stroke="#111" stroke-width="4" stroke-linecap="round"/><line x1="70" y1="38" x2="90" y2="24" stroke="#111" stroke-width="4" stroke-linecap="round"/><line x1="28" y1="50" x2="8" y2="46" stroke="#111" stroke-width="4" stroke-linecap="round"/><line x1="72" y1="50" x2="92" y2="46" stroke="#111" stroke-width="4" stroke-linecap="round"/><circle cx="40" cy="30" r="7" fill="#fff"/><circle cx="40" cy="30" r="4" fill="#cc0000"/><circle cx="60" cy="28" r="7" fill="#fff"/><circle cx="60" cy="28" r="4" fill="#cc0000"/><path d="M36 42 Q50 54 64 42" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="42" y="42" width="4" height="7" rx="1" fill="#fff"/><rect x="49" y="43" width="4" height="8" rx="1" fill="#fff"/>`,
 birdramon:`<ellipse cx="50" cy="55" rx="18" ry="22" fill="#111"/><ellipse cx="50" cy="28" rx="22" ry="18" fill="#111"/><path d="M10 40 Q30 20 28 50" stroke="#111" stroke-width="8" fill="#111"/><path d="M90 40 Q70 20 72 50" stroke="#111" stroke-width="8" fill="#111"/><circle cx="40" cy="26" r="8" fill="#fff"/><circle cx="40" cy="26" r="5" fill="#cc0000"/><circle cx="62" cy="24" r="7" fill="#fff"/><circle cx="62" cy="24" r="4" fill="#cc0000"/><path d="M34 38 Q50 50 66 38" stroke="#cc0000" stroke-width="3" fill="none"/><rect x="38" y="38" width="5" height="8" rx="1" fill="#fff"/><rect x="46" y="39" width="6" height="9" rx="1" fill="#fff"/><rect x="55" y="38" width="5" height="8" rx="1" fill="#fff"/>`,
 devimon:`<ellipse cx="50" cy="56" rx="22" ry="20" fill="#111"/><ellipse cx="50" cy="28" rx="22" ry="22" fill="#111"/><polygon points="34,8 26,0 36,12" fill="#111"/><polygon points="66,8 74,0 64,12" fill="#111"/><path d="M10 30 Q22 20 22 50" stroke="#111" stroke-width="10" fill="#111"/><path d="M90 30 Q78 20 78 50" stroke="#111" stroke-width="10" fill="#111"/><circle cx="37" cy="25" r="10" fill="#fff"/><circle cx="37" cy="25" r="6.5" fill="#cc0000"/><circle cx="65" cy="22" r="9" fill="#fff"/><circle cx="65" cy="22" r="6" fill="#cc0000"/><path d="M30 40 Q50 56 70 40" stroke="#cc0000" stroke-width="3.5" fill="none"/><rect x="34" y="40" width="7" height="10" rx="1" fill="#fff"/><rect x="44" y="41" width="8" height="12" rx="1" fill="#fff"/><rect x="54" y="40" width="7" height="10" rx="1" fill="#fff"/>`,
 };
-const MONS={
-botamon:{name:"巴達獸",svg:MSVG.botamon,stage:"幼年期I",lv:1,atk:8,hp:40,xpNeeded:20},
-koromon:{name:"可羅獸",svg:MSVG.koromon,stage:"幼年期II",lv:3,atk:18,hp:80,xpNeeded:60},
-agumon:{name:"亞古獸",svg:MSVG.agumon,stage:"成長期",lv:8,atk:40,hp:160,xpNeeded:150},
-gabumon:{name:"加布獸",svg:MSVG.gabumon,stage:"成長期",lv:8,atk:38,hp:150,xpNeeded:150},
-greymon:{name:"暴龍獸",svg:MSVG.greymon,stage:"成熟期",lv:15,atk:80,hp:300,xpNeeded:400},
-garurumon:{name:"加魯魯獸",svg:MSVG.garurumon,stage:"成熟期",lv:15,atk:75,hp:280,xpNeeded:400},
-metalgreymon:{name:"鋼鐵暴龍獸",svg:MSVG.metalgreymon,stage:"完全體",lv:25,atk:150,hp:500,xpNeeded:999},
-weregarurumon:{name:"狼人加魯魯",svg:MSVG.weregarurumon,stage:"完全體",lv:25,atk:140,hp:480,xpNeeded:999},
-wargreymon:{name:"戰鬥暴龍獸",svg:MSVG.wargreymon,stage:"究極體",lv:40,atk:250,hp:800,xpNeeded:9999},
-omnimon:{name:"究極天使獸",svg:MSVG.omnimon,stage:"究極合體",lv:50,atk:350,hp:1000,xpNeeded:9999},
-};
-const EPATH={botamon:["koromon"],koromon:["agumon","gabumon"],agumon:["greymon"],gabumon:["garurumon"],greymon:["metalgreymon"],garurumon:["weregarurumon"],metalgreymon:["wargreymon"],weregarurumon:["omnimon"]};
-const ENEMIES=[
-{name:"天使獸",svg:ESVG.tenshi,lv:2,atk:10,hp:30},
-{name:"加布獸",svg:ESVG.gabumon2,lv:5,atk:22,hp:70},
-{name:"甲蟲獸",svg:ESVG.tentomon,lv:8,atk:35,hp:120},
-{name:"火鳥獸",svg:ESVG.birdramon,lv:14,atk:70,hp:250},
-{name:"惡魔獸",svg:ESVG.devimon,lv:20,atk:120,hp:400},
-];
-const ITEMS={
-meat:{name:"烤肉",icon:"🍖",desc:"飽食度 +50",effect(){G.hunger=Math.min(100,G.hunger+50);m("status-msg","餵了烤肉！飽食度大回！");an("happy");}},
-snack:{name:"糖果",icon:"🍬",desc:"心情值 +40",effect(){G.mood=Math.min(100,G.mood+40);m("status-msg","餵了糖果！心情變好！");an("happy");}},
-potion:{name:"急救藥",icon:"💊",desc:"HP恢復50%",effect(){G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.5));m("status-msg","使用急救藥！HP大回！");}},
-vitamin:{name:"維他命",icon:"⭐",desc:"經驗值 +30",effect(){G.xp+=30;m("status-msg","吃了維他命！+30 EXP！");buildEvoList();}},
-};
-const HUNGER_PH=12,MOOD_PH=8,HP_HUNGRY_PH=5,SP_MAX=5,KEY="digibattle_v8";
-function defG(){return{monId:"botamon",hp:40,maxHp:40,xp:0,wins:0,steps:0,sp:0,hunger:80,mood:80,lastSeen:Date.now(),bag:{meat:3,snack:3,potion:2,vitamin:1}};}
-let G=defG();
-function save(){try{G.lastSeen=Date.now();localStorage.setItem(KEY,JSON.stringify(G));const e=document.getElementById("save-status2");if(e){e.textContent="✓ 已存檔";setTimeout(()=>{e.textContent="✓ 自動存檔";},1200);}}catch(e){}}
-function load(){try{const d=localStorage.getItem(KEY);if(d){const p=JSON.parse(d);if(p&&p.monId&&MONS[p.monId]){G=p;['sp','hunger','mood'].forEach(k=>{if(G[k]==null)G[k]=k==='sp'?0:80;});if(!G.bag)G.bag={meat:3,snack:3,potion:2,vitamin:1};if(!G.lastSeen)G.lastSeen=Date.now();document.getElementById("save-status").textContent="✓ 找到存檔！";return true;}}}catch(e){}return false;}
-function newGame(){try{localStorage.removeItem(KEY);}catch(e){}G=defG();document.getElementById("save-status").textContent="已重置";}
-function mon(){return MONS[G.monId];}
-function ss(id,h){const e=document.getElementById(id);if(e)e.innerHTML=h;}
-function m(id,t){document.getElementById(id).textContent=t;}
-function an(cls){const s=document.getElementById("my-sprite");if(!s)return;s.classList.remove("shake","happy");void s.offsetWidth;s.classList.add(cls);}
-function updateLcd(){const e=document.getElementById("lcd-bg-svg");if(e)e.innerHTML=LCDBG[MSCENE[G.monId]||"grassland"];}
-function applyDecay(){
-  const now=Date.now(),hrs=Math.min((now-G.lastSeen)/3600000,24);
-  if(hrs<0.05)return null;
-  const hl=Math.round(hrs*HUNGER_PH),ml=Math.round(hrs*MOOD_PH);
-  G.hunger=Math.max(0,G.hunger-hl);G.mood=Math.max(0,G.mood-ml);
-  if(G.hunger===0)G.hp=Math.max(1,G.hp-Math.round(hrs*HP_HUNGRY_PH));
-  G.lastSeen=now;
-  return{mins:Math.round(hrs*60),hl,ml};
+const MONS={botamon:{name:"巴達獸",svg:MS.botamon,stage:"幼年期I",lv:1,atk:8,hp:40,xpNeeded:20},koromon:{name:"可羅獸",svg:MS.koromon,stage:"幼年期II",lv:3,atk:18,hp:80,xpNeeded:60},agumon:{name:"亞古獸",svg:MS.agumon,stage:"成長期",lv:8,atk:40,hp:160,xpNeeded:150},gabumon:{name:"加布獸",svg:MS.gabumon,stage:"成長期",lv:8,atk:38,hp:150,xpNeeded:150},greymon:{name:"暴龍獸",svg:MS.greymon,stage:"成熟期",lv:15,atk:80,hp:300,xpNeeded:400},garurumon:{name:"加魯魯獸",svg:MS.garurumon,stage:"成熟期",lv:15,atk:75,hp:280,xpNeeded:400},metalgreymon:{name:"鋼鐵暴龍獸",svg:MS.metalgreymon,stage:"完全體",lv:25,atk:150,hp:500,xpNeeded:999},weregarurumon:{name:"狼人加魯魯",svg:MS.weregarurumon,stage:"完全體",lv:25,atk:140,hp:480,xpNeeded:999},wargreymon:{name:"戰鬥暴龍獸",svg:MS.wargreymon,stage:"究極體",lv:40,atk:250,hp:800,xpNeeded:9999},omnimon:{name:"究極天使獸",svg:MS.omnimon,stage:"究極合體",lv:50,atk:350,hp:1000,xpNeeded:9999}};
+const EP={botamon:["koromon"],koromon:["agumon","gabumon"],agumon:["greymon"],gabumon:["garurumon"],greymon:["metalgreymon"],garurumon:["weregarurumon"],metalgreymon:["wargreymon"],weregarurumon:["omnimon"]};
+const ENS=[{name:"天使獸",svg:ES.tenshi,lv:2,atk:10,hp:30},{name:"加布獸",svg:ES.gabumon2,lv:5,atk:22,hp:70},{name:"甲蟲獸",svg:ES.tentomon,lv:8,atk:35,hp:120},{name:"火鳥獸",svg:ES.birdramon,lv:14,atk:70,hp:250},{name:"惡魔獸",svg:ES.devimon,lv:20,atk:120,hp:400}];
+const ITS={meat:{name:"烤肉",icon:"🍖",desc:"飽食度+50",ef(){G.hunger=Math.min(100,G.hunger+50);m("status-msg","餵了烤肉！飽食大回！");an("happy");}},snack:{name:"糖果",icon:"🍬",desc:"心情+40",ef(){G.mood=Math.min(100,G.mood+40);m("status-msg","餵了糖果！心情好！");an("happy");}},potion:{name:"急救藥",icon:"💊",desc:"HP恢復50%",ef(){G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.5));m("status-msg","使用急救藥！HP大回！");}},vitamin:{name:"維他命",icon:"⭐",desc:"EXP+30",ef(){G.xp+=30;m("status-msg","吃了維他命！+30 EXP！");bEl();}}};
+
+// ===== 存檔 =====
+const HPH=12,MPH=8,HPHP=5,SPM=5,K="digi_v10";
+function dG(){return{monId:"botamon",hp:40,maxHp:40,xp:0,wins:0,steps:0,sp:0,hunger:80,mood:80,lastSeen:Date.now(),bag:{meat:3,snack:3,potion:2,vitamin:1}};}
+let G=dG();
+function sv(){try{G.lastSeen=Date.now();localStorage.setItem(K,JSON.stringify(G));const e=document.getElementById("save-status2");if(e){e.textContent="✓ 已存檔";setTimeout(()=>{e.textContent="✓ 自動存檔";},1200);}}catch(e){}}
+function ld(){try{const d=localStorage.getItem(K);if(d){const p=JSON.parse(d);if(p&&p.monId&&MONS[p.monId]){G=p;['sp','hunger','mood'].forEach(k=>{if(G[k]==null)G[k]=k==='sp'?0:80;});if(!G.bag)G.bag={meat:3,snack:3,potion:2,vitamin:1};if(!G.lastSeen)G.lastSeen=Date.now();document.getElementById("save-status").textContent="✓ 找到存檔！";return true;}}}catch(e){}return false;}
+function newGame(){stopGPS();try{localStorage.removeItem(K);}catch(e){}G=dG();document.getElementById("save-status").textContent="已重置";}
+
+// ===== GPS 追蹤系統 =====
+const MAX_SPEED_MPS = 20000/3600; // 20 km/h → m/s（超過就過濾）
+let gpsWatchId=null, lastPos=null, gpsRunning=false, sessionMeters=0;
+
+function gpsDistMeters(lat1,lon1,lat2,lon2){
+  const R=6371000;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+
+function toggleGPS(){
+  if(gpsRunning) stopGPS();
+  else startGPS();
+}
+
+function startGPS(){
+  if(!navigator.geolocation){
+    setGPSUI('error','GPS 不支援','此裝置無法使用 GPS');
+    return;
+  }
+  setGPSUI('searching','定位中...','等待 GPS 訊號...');
+  gpsWatchId=navigator.geolocation.watchPosition(
+    onGPSSuccess,
+    onGPSError,
+    {enableHighAccuracy:true, maximumAge:5000, timeout:15000}
+  );
+  gpsRunning=true;
+  document.getElementById("gps-toggle-btn").textContent="關閉";
+  document.getElementById("gps-toggle-btn").classList.add("on");
+}
+
+function stopGPS(){
+  if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
+  gpsRunning=false;lastPos=null;
+  setGPSUI('off','GPS 已關閉','今日：'+G.steps+' 公尺');
+  document.getElementById("gps-toggle-btn").textContent="開啟";
+  document.getElementById("gps-toggle-btn").classList.remove("on");
+}
+
+function onGPSSuccess(pos){
+  const {latitude:lat,longitude:lon,accuracy} = pos.coords;
+  const now=Date.now();
+
+  // 精度太差（> 50公尺誤差）跳過
+  if(accuracy>50){
+    setGPSUI('searching','訊號弱（精度'+Math.round(accuracy)+'m）','等待更好訊號...');
+    return;
+  }
+  setGPSUI('active','GPS 運作中（精度'+Math.round(accuracy)+'m）','今日：'+G.steps+' 公尺');
+
+  if(lastPos){
+    const dist=gpsDistMeters(lastPos.lat,lastPos.lon,lat,lon);
+    const timeSec=(now-lastPos.time)/1000;
+    const speed=timeSec>0?dist/timeSec:0;
+
+    // 速度過濾：超過 10 km/h 不計算
+    if(speed<=MAX_SPEED_MPS && dist>=1){
+      const meters=Math.round(dist);
+      G.steps+=meters;
+      sessionMeters+=meters;
+      // 每 100 公尺加一點 XP 和心情
+      const xpGain=Math.floor(meters/10);
+      const moodGain=Math.floor(meters/50);
+      if(xpGain>0){G.xp+=xpGain;bEl();}
+      if(moodGain>0)G.mood=Math.min(100,G.mood+moodGain);
+      G.sp=Math.min(SPM,G.sp+Math.floor(meters/200));
+      rf();
+      document.getElementById("gps-meter").textContent='今日：'+G.steps+' 公尺（+'+meters+'m）';
+      sv();
+    }
+  }
+  lastPos={lat,lon,time:now};
+}
+
+function onGPSError(err){
+  const msgs={1:'請允許定位權限',2:'無法取得位置',3:'GPS 逾時'};
+  setGPSUI('error',msgs[err.code]||'GPS 錯誤','請檢查設定後重試');
+  gpsRunning=false;
+  document.getElementById("gps-toggle-btn").textContent="開啟";
+  document.getElementById("gps-toggle-btn").classList.remove("on");
+}
+
+function setGPSUI(state,status,meter){
+  const dot=document.getElementById("gps-dot");
+  dot.className='gps-dot '+(state==='active'?'active':state==='searching'?'searching':state==='error'?'error':'');
+  document.getElementById("gps-status").textContent=status;
+  document.getElementById("gps-meter").textContent=meter;
+}
+
+// ===== 時間消耗 =====
+function dec(){
+  const now=Date.now(),h=Math.min((now-G.lastSeen)/3600000,24);
+  if(h<0.05)return null;
+  const hl=Math.round(h*HPH),ml=Math.round(h*MPH);
+  G.hunger=Math.max(0,G.hunger-hl);G.mood=Math.max(0,G.mood-ml);
+  if(G.hunger===0)G.hp=Math.max(1,G.hp-Math.round(h*HPHP));
+  G.lastSeen=now;return{mins:Math.round(h*60),hl,ml};
+}
+
+// ===== 核心函式 =====
+function mn(){return MONS[G.monId];}
+function ss(id,h){const e=document.getElementById(id);if(e)e.innerHTML=h;}
+function m(id,t){const e=document.getElementById(id);if(e)e.textContent=t;}
+function an(c){const s=document.getElementById("my-sprite");if(!s)return;s.classList.remove("shake","happy");void s.offsetWidth;s.classList.add(c);}
+function uLcd(){const e=document.getElementById("lcd-bg-svg");if(e)e.innerHTML=LCDBG[MSC[G.monId]||"grassland"];}
+
 function startGame(){
-  const d=applyDecay();
+  const d=dec();
   document.getElementById("title-screen").classList.remove("active");
   document.getElementById("main-screen").classList.add("active");
-  refresh();buildEnemies();buildEvoList();buildBag();
+  rf();bEn();bEl();bBag();
+  // 更新 GPS 公尺顯示
+  document.getElementById("gps-meter").textContent='今日：'+G.steps+' 公尺';
   if(d&&d.mins>2){
     let t="離開了 "+d.mins+" 分鐘";
-    if(d.hl>0)t+="，飽食 -"+d.hl;if(d.ml>0)t+="，心情 -"+d.ml;
-    if(G.hunger===0)t+="，餓太久 HP 下降！";
-    m("status-msg",t);save();
+    if(d.hl>0)t+="，飽食-"+d.hl;if(d.ml>0)t+="，心情-"+d.ml;
+    if(G.hunger===0)t+="，餓太久HP下降！";
+    m("status-msg",t);sv();
   }
 }
 function showMain(){
   ["battle-screen","result-screen"].forEach(id=>document.getElementById(id).classList.remove("active"));
   document.getElementById("main-screen").classList.add("active");
-  refresh();buildEvoList();
+  rf();bEl();
 }
 function backToMain(){showMain();}
-function showTab(tab){
-  const ts=["status","bag","battle","evolve"];
-  ts.forEach((t,i)=>{
-    document.querySelectorAll(".nav-tab")[i].classList.toggle("active",t===tab);
-    const el=document.getElementById("tab-"+t);
-    if(el){el.style.display=t===tab?"flex":"none";if(t===tab)el.style.flexDirection="column";}
-  });
-  if(tab==="evolve")buildEvoList();if(tab==="bag")buildBag();
+function showTab(t){
+  document.querySelectorAll(".tab-content").forEach(el=>el.classList.remove("active"));
+  document.getElementById("tab-"+t).classList.add("active");
+  document.querySelectorAll(".nav-tab").forEach((el,i)=>{el.classList.toggle("active",["status","bag","battle","evolve"][i]===t);});
+  if(t==="evolve")bEl();if(t==="bag")bBag();
 }
-function refresh(){
-  const mo=mon();
-  ss("my-sprite",mo.svg);document.getElementById("my-sprite").className="mon-display";
-  document.getElementById("my-name").textContent=mo.name;
-  document.getElementById("stage-label").textContent=mo.stage;
+function rf(){
+  const mo=mn();
+  ss("my-sprite",mo.svg);document.getElementById("my-sprite").className="mon-svg";
+  m("my-name",mo.name);m("stage-label",mo.stage);
   document.getElementById("stat-lv").textContent=mo.lv+Math.floor(G.xp/30);
   document.getElementById("stat-atk").textContent=mo.atk+G.wins*2;
   document.getElementById("stat-win").textContent=G.wins;
   document.getElementById("stat-steps").textContent=G.steps;
-  const hP=Math.round(G.hp/G.maxHp*100);
-  const hB=document.getElementById("hp-bar");
-  hB.style.width=hP+"%";hB.style.background=hP<=25?"#ff4444":hP<=50?"#ffaa22":"#44ff88";
+  const hp=Math.round(G.hp/G.maxHp*100);
+  const hb=document.getElementById("hp-bar");
+  hb.style.width=hp+"%";hb.style.background=hp<=25?"#ff4444":hp<=50?"#ffaa22":"#44ff88";
   document.getElementById("hp-text").textContent=G.hp+"/"+G.maxHp;
   document.getElementById("hunger-bar").style.width=G.hunger+"%";document.getElementById("hunger-text").textContent=G.hunger+"/100";
   document.getElementById("mood-bar").style.width=G.mood+"%";document.getElementById("mood-text").textContent=G.mood+"/100";
   document.getElementById("xp-bar").style.width=Math.min(100,Math.round(G.xp/mo.xpNeeded*100))+"%";
-  document.getElementById("sp-bar").style.width=Math.round(G.sp/SP_MAX*100)+"%";
-  document.getElementById("sp-text").textContent=G.sp+"/"+SP_MAX+(G.sp>=SP_MAX?" ★":"");
+  document.getElementById("sp-bar").style.width=Math.round(G.sp/SPM*100)+"%";
+  document.getElementById("sp-text").textContent=G.sp+"/"+SPM+(G.sp>=SPM?" ★":"");
   document.getElementById("warn-hunger").style.display=G.hunger<25?"block":"none";
   document.getElementById("warn-mood").style.display=G.mood<25?"block":"none";
-  updateLcd();
+  uLcd();
 }
 function doTrain(){
   if(G.hp<G.maxHp*0.15){m("status-msg","HP太低！先用急救藥！");return;}
-  if(G.hunger<15){m("status-msg","肚子太餓！先從背包餵食！");return;}
+  if(G.hunger<15){m("status-msg","肚子太餓！先去背包餵食！");return;}
   const g=Math.floor(Math.random()*8+5);
   G.xp+=g;G.hp=Math.max(1,G.hp-Math.floor(G.maxHp*0.1));
-  G.hunger=Math.max(0,G.hunger-10);G.mood=Math.min(100,G.mood+5);G.sp=Math.min(SP_MAX,G.sp+1);
-  m("status-msg","訓練完成！+"+g+" EXP，能量 +1");an("shake");refresh();buildEvoList();save();
+  G.hunger=Math.max(0,G.hunger-10);G.mood=Math.min(100,G.mood+5);G.sp=Math.min(SPM,G.sp+1);
+  m("status-msg","訓練完成！+"+g+" EXP");an("shake");rf();bEl();sv();
 }
 function doPlay(){
-  G.mood=Math.min(100,G.mood+20);G.hunger=Math.max(0,G.hunger-5);G.sp=Math.min(SP_MAX,G.sp+1);
-  m("status-msg","玩耍完！心情 +20，能量 +1");an("happy");refresh();save();
+  G.mood=Math.min(100,G.mood+20);G.hunger=Math.max(0,G.hunger-5);G.sp=Math.min(SPM,G.sp+1);
+  m("status-msg","玩耍完！心情+20");an("happy");rf();sv();
 }
-function doStepCheck(){
-  if(typeof DeviceMotionEvent!=="undefined"&&DeviceMotionEvent.requestPermission){
-    DeviceMotionEvent.requestPermission().then(s=>{fakeSteps();}).catch(()=>fakeSteps());
-  }else fakeSteps();
-}
-function fakeSteps(){
-  const s=Math.floor(Math.random()*300+100);G.steps+=s;
-  const xp=Math.floor(s/50);G.xp+=xp;G.mood=Math.min(100,G.mood+Math.floor(s/100));G.sp=Math.min(SP_MAX,G.sp+1);
-  m("status-msg","走了 "+s+" 步！+"+xp+" EXP，心情 +"+Math.floor(s/100));
-  refresh();buildEvoList();save();
-}
-function buildBag(){
-  const el=document.getElementById("bag-grid");if(!el)return;el.innerHTML="";
-  Object.entries(ITEMS).forEach(([k,it])=>{
-    const cnt=G.bag[k]||0,d=document.createElement("div");d.className="bag-card";
-    d.innerHTML=`<div class="bag-icon">${it.icon}</div><div class="bag-name">${it.name}</div><div class="bag-desc">${it.desc}</div><div class="bag-cnt">持有：${cnt} 個</div><button class="item-btn" style="width:100%;" ${cnt<=0?"disabled":""} onclick="useItem('${k}')">使用</button>`;
-    el.appendChild(d);
-  });
-}
-function useItem(k){
-  if(!G.bag[k]||G.bag[k]<=0){m("bag-msg","道具不夠了！");return;}
-  G.bag[k]--;ITEMS[k].effect();refresh();buildBag();save();
-}
-function buildEnemies(){
-  const el=document.getElementById("enemy-list");el.innerHTML="";
-  ENEMIES.forEach((e,i)=>{
-    const b=document.createElement("button");b.className="enemy-btn";
-    b.innerHTML=(e.lv<=mon().lv+3?"⚔":"☠")+" <b>"+e.name+"</b>　等級:"+e.lv+"　攻擊:"+e.atk+"　HP:"+e.hp;
-    b.onclick=()=>startBattle(i);el.appendChild(b);
-  });
-}
-function buildEvoList(){
-  const el=document.getElementById("evo-list");el.innerHTML="";
-  const ps=EPATH[G.monId]||[];const mo=mon();const ok=G.xp>=mo.xpNeeded;
-  if(!ps.length){el.innerHTML='<div style="font-size:9px;color:#5577aa;grid-column:1/-1;text-align:center;padding:14px;">已達最終形態</div>';document.getElementById("evo-btn").disabled=true;m("evo-msg","已是最強形態！");return;}
-  ps.forEach(pid=>{
-    const pm=MONS[pid],c=document.createElement("div");c.className="evo-card";
-    c.innerHTML='<div style="display:flex;justify-content:center;"><svg viewBox="0 0 100 100" width="54" height="54">'+pm.svg+'</svg></div><div class="evo-name">'+pm.name+'</div><div class="evo-req">需 '+mo.xpNeeded+' EXP</div>';
-    c.onclick=()=>{document.querySelectorAll(".evo-card").forEach(x=>x.classList.remove("selected"));c.classList.add("selected");document.getElementById("evo-btn").disabled=!ok;};
-    el.appendChild(c);
-  });
-  m("evo-msg",ok?"條件達成！選擇目標！":"需 "+mo.xpNeeded+" EXP，目前 "+Math.floor(G.xp));
-  document.getElementById("evo-btn").disabled=true;
-}
-function doEvolve(){
-  const sel=document.querySelector(".evo-card.selected");if(!sel){m("evo-msg","請先選擇目標！");return;}
-  const ps=EPATH[G.monId];const tid=ps[Array.from(document.querySelectorAll(".evo-card")).indexOf(sel)];
-  const tm=MONS[tid];G.monId=tid;G.hp=tm.hp;G.maxHp=tm.hp;G.xp=0;G.hunger=80;G.mood=90;
-  showTab("status");m("status-msg","恭喜！進化為「"+tm.name+"」！");
-  refresh();buildEnemies();buildEvoList();save();
-}
+function bBag(){const el=document.getElementById("bag-grid");if(!el)return;el.innerHTML="";Object.entries(ITS).forEach(([k,it])=>{const cnt=G.bag[k]||0,d=document.createElement("div");d.className="bc";d.innerHTML=`<div class="bi">${it.icon}</div><div class="bn">${it.name}</div><div class="bd">${it.desc}</div><button class="ib" style="width:100%;" ${cnt<=0?"disabled":""} onclick="uI('${k}')">使用</button>`;el.appendChild(d);});}
+function uI(k){if(!G.bag[k]||G.bag[k]<=0){m("bag-msg","道具不夠了！");return;}G.bag[k]--;ITS[k].ef();rf();bBag();sv();}
+function bEn(){const el=document.getElementById("enemy-list");el.innerHTML="";ENS.forEach((e,i)=>{const b=document.createElement("button");b.className="eb";b.innerHTML=(e.lv<=mn().lv+3?"⚔":"☠")+" <b>"+e.name+"</b>　LV:"+e.lv+"　ATK:"+e.atk+"　HP:"+e.hp;b.onclick=()=>sB(i);el.appendChild(b);});}
+function bEl(){const el=document.getElementById("evo-list");el.innerHTML="";const ps=EP[G.monId]||[];const mo=mn();const ok=G.xp>=mo.xpNeeded;if(!ps.length){el.innerHTML='<div style="font-size:9px;color:#446688;grid-column:1/-1;text-align:center;padding:14px;">已達最終形態</div>';document.getElementById("evo-btn").disabled=true;m("evo-msg","已是最強形態！");return;}ps.forEach(pid=>{const pm=MONS[pid],c=document.createElement("div");c.className="ec";c.innerHTML='<div style="display:flex;justify-content:center;"><svg viewBox="0 0 100 100" width="56" height="56">'+pm.svg+'</svg></div><div class="en">'+pm.name+'</div><div class="er">需 '+mo.xpNeeded+' EXP</div>';c.onclick=()=>{document.querySelectorAll(".ec").forEach(x=>x.classList.remove("sel"));c.classList.add("sel");document.getElementById("evo-btn").disabled=!ok;};el.appendChild(c);});m("evo-msg",ok?"條件達成！選擇目標！":"需 "+mo.xpNeeded+" EXP，目前 "+Math.floor(G.xp));document.getElementById("evo-btn").disabled=true;}
+function doEvolve(){const sel=document.querySelector(".ec.sel");if(!sel){m("evo-msg","請先選擇目標！");return;}const ps=EP[G.monId];const tid=ps[Array.from(document.querySelectorAll(".ec")).indexOf(sel)];const tm=MONS[tid];G.monId=tid;G.hp=tm.hp;G.maxHp=tm.hp;G.xp=0;G.hunger=80;G.mood=90;showTab("status");m("status-msg","恭喜！進化為「"+tm.name+"」！");rf();bEn();bEl();sv();}
+
+// ===== 戰鬥 =====
 let B={};const SPB=5;
-function efx(type,side){
-  const el=document.getElementById("effect-layer");
-  const map={slash:{e:"⚡",a:"sa 0.5s ease-out forwards"},boom:{e:"💥",a:"ba 0.6s ease-out forwards"},special:{e:"🌟",a:"spa 0.8s ease-out forwards"},hit:{e:"✨",a:"ha 0.4s ease-out forwards"}};
-  const ef=map[type];if(!ef)return;
-  el.textContent=ef.e;el.style.opacity="0";el.style.animation="none";void el.offsetWidth;
-  el.style.justifyContent=side==="right"?"flex-end":"flex-start";
-  el.style.paddingLeft=side==="left"?"28px":"0";el.style.paddingRight=side==="right"?"28px":"0";
-  el.style.animation=ef.a;
-}
-function af(id,an2,dur){const el=document.getElementById(id);if(!el)return;el.style.animation=an2+" "+dur+"s ease-in-out";setTimeout(()=>{el.style.animation="";},dur*1000);}
-function hf(id){const el=document.getElementById(id);if(!el)return;el.style.animation="hf 0.5s ease-in-out";setTimeout(()=>{el.style.animation="";},500);}
-function setBtns(en){document.getElementById("btn-attack").disabled=!en;updSP();}
-function updSP(){
-  const btn=document.getElementById("btn-special");
-  btn.disabled=(B.over||B.busy||B.sp<SPB);
-  document.getElementById("sp-charge-text").textContent=(B.sp||0)+"/"+SPB;
-  document.getElementById("my-sp-inner").style.width=Math.min(100,Math.round((B.sp||0)/SPB*100))+"%";
-}
-function updBars(){
-  document.getElementById("my-hp-inner").style.width=Math.max(0,Math.round(B.mHp/B.mMaxHp*100))+"%";
-  document.getElementById("en-hp-inner").style.width=Math.max(0,Math.round(B.eHp/B.eMaxHp*100))+"%";
-  document.getElementById("en-sp-inner").style.width=Math.min(100,Math.round((B.eSp||0)/SPB*100))+"%";
-  updSP();
-}
+function efx(tp,sd){const el=document.getElementById("effect-layer");const mp={slash:{e:"⚡",a:"sa 0.5s ease-out forwards"},boom:{e:"💥",a:"ba2 0.6s ease-out forwards"},special:{e:"🌟",a:"spa 0.8s ease-out forwards"},hit:{e:"✨",a:"ha 0.4s ease-out forwards"}};const ef=mp[tp];if(!ef)return;el.textContent=ef.e;el.style.opacity="0";el.style.animation="none";void el.offsetWidth;el.style.justifyContent=sd==="right"?"flex-end":"flex-start";el.style.paddingLeft=sd==="left"?"28px":"0";el.style.paddingRight=sd==="right"?"28px":"0";el.style.animation=ef.a;}
+function af(id,a2,dur){const el=document.getElementById(id);if(!el)return;el.style.animation=a2+" "+dur+"s ease-in-out";setTimeout(()=>{el.style.animation="";},dur*1000);}
+function hff(id){const el=document.getElementById(id);if(!el)return;el.style.animation="hf 0.5s ease-in-out";setTimeout(()=>{el.style.animation="";},500);}
+function sBt(en){document.getElementById("btn-attack").disabled=!en;uSP();}
+function uSP(){const btn=document.getElementById("btn-special");btn.disabled=(B.over||B.busy||B.sp<SPB);document.getElementById("sp-charge-text").textContent=(B.sp||0)+"/"+SPB;document.getElementById("my-sp-inner").style.width=Math.min(100,Math.round((B.sp||0)/SPB*100))+"%";}
+function uBrs(){document.getElementById("my-hp-inner").style.width=Math.max(0,Math.round(B.mHp/B.mMaxHp*100))+"%";document.getElementById("en-hp-inner").style.width=Math.max(0,Math.round(B.eHp/B.eMaxHp*100))+"%";document.getElementById("en-sp-inner").style.width=Math.min(100,Math.round((B.eSp||0)/SPB*100))+"%";uSP();}
 function blog(t){const el=document.getElementById("battle-log");el.textContent+=t+"\n";el.scrollTop=el.scrollHeight;}
-function startBattle(idx){
-  if(G.hunger<10){m("battle-msg","太餓了！先去背包餵食！");return;}
-  const en=ENEMIES[idx];
-  B={idx,eHp:en.hp,eMaxHp:en.hp,mHp:G.hp,mMaxHp:G.maxHp,sp:G.sp,eSp:0,over:false,busy:false};
-  document.getElementById("main-screen").classList.remove("active");
-  document.getElementById("battle-screen").classList.add("active");
-  ss("my-fighter-svg",mon().svg);ss("en-fighter-svg",en.svg);
-  document.getElementById("my-fighter-label").textContent=mon().name;
-  document.getElementById("en-fighter-label").textContent=en.name;
-  document.getElementById("my-hp-inner").style.width=Math.round(G.hp/G.maxHp*100)+"%";
-  document.getElementById("en-hp-inner").style.width="100%";
-  document.getElementById("battle-log").textContent="";
-  document.getElementById("battle-btns").style.display="grid";
-  document.getElementById("flee-btn-wrap").style.display="block";
-  setBtns(true);
-  const bg=document.getElementById("arena-bg-svg");if(bg)bg.innerHTML=BG[ESCENE[idx]||"grassland"];
-  blog("⚔ "+mon().name+" VS "+en.name);
-  if(G.hp<G.maxHp)blog("我方HP："+G.hp+"/"+G.maxHp);
-  updBars();
-}
-function showResult(win,en,xp){
-  document.getElementById("battle-screen").classList.remove("active");
-  document.getElementById("result-screen").classList.add("active");
-  const t=document.getElementById("result-title");
-  t.textContent=win?"✨ 勝利！":"💀 敗北...";t.className="rtitle "+(win?"rwin":"rlose");
-  document.getElementById("result-sprite").innerHTML=mon().svg;
-  document.getElementById("result-stats").innerHTML=win?
-    "對手："+en.name+"\n獲得EXP：+"+xp+"\nHP："+G.hp+"/"+G.maxHp+"\n飽食："+G.hunger+"/100\n心情："+G.mood+"/100\n總勝場："+G.wins:
-    "對手："+en.name+"\nHP剩："+G.hp+"/"+G.maxHp+"\n先去背包恢復再挑戰！";
-}
-function battleAction(type){
-  if(B.over||B.busy)return;
-  if(type==="special"&&B.sp<SPB){blog("必殺能量不足！");return;}
-  B.busy=true;setBtns(false);
-  const en=ENEMIES[B.idx],myAtk=mon().atk+G.wins*2;
-  let dmg;
-  if(type==="special"){dmg=Math.floor(myAtk*(2.2+Math.random()*0.6));B.sp=0;}
-  else{dmg=Math.floor(myAtk*(0.7+Math.random()*0.6));B.sp=Math.min(SPB,B.sp+1);}
-  af("fw-my","mya",0.35);
-  setTimeout(()=>{
-    efx(type==="special"?"special":"slash","right");
-    hf("en-fighter-svg");B.eHp-=dmg;updBars();
-    blog((type==="special"?"🌟 必殺！":"⚔ 攻擊")+"→ 敵方 -"+dmg+" HP");
-    if(B.eHp<=0){
-      B.over=true;G.wins++;const xp=Math.floor(en.lv*8+20);
-      G.xp+=xp;G.hp=B.mHp;G.sp=B.sp;G.mood=Math.min(100,G.mood+15);G.hunger=Math.max(0,G.hunger-15);
-      efx("boom","right");
-      document.getElementById("battle-btns").style.display="none";
-      document.getElementById("flee-btn-wrap").style.display="none";
-      setTimeout(()=>{showResult(true,en,xp);buildEvoList();save();},1200);return;
-    }
-    setTimeout(()=>{
-      af("fw-en","ena",0.35);
-      setTimeout(()=>{
-        B.eSp=Math.min(SPB,B.eSp+1);let ed;
-        if(B.eSp>=SPB){ed=Math.floor(en.atk*(2.0+Math.random()*0.5));B.eSp=0;efx("special","left");blog("😈 敵方必殺！→ 我方 -"+ed+" HP");}
-        else{ed=Math.floor(en.atk*(0.7+Math.random()*0.6));efx("hit","left");blog("💢 反擊！→ 我方 -"+ed+" HP");}
-        hf("my-fighter-svg");B.mHp-=ed;updBars();
-        if(B.mHp<=0){
-          B.over=true;G.hp=Math.max(1,Math.floor(G.maxHp*0.1));G.sp=0;G.mood=Math.max(0,G.mood-20);
-          document.getElementById("battle-btns").style.display="none";
-          document.getElementById("flee-btn-wrap").style.display="none";
-          setTimeout(()=>{showResult(false,en,0);save();},1200);return;
-        }
-        B.busy=false;setBtns(true);
-      },250);
-    },500);
-  },300);
-}
-function fleeBattle(){G.hp=B.mHp;G.sp=B.sp;showMain();m("status-msg","逃跑成功！");save();}
-load();
+function sB(idx){if(G.hunger<10){m("battle-msg","太餓了！先去背包餵食！");return;}const en=ENS[idx];B={idx,eHp:en.hp,eMaxHp:en.hp,mHp:G.hp,mMaxHp:G.maxHp,sp:G.sp,eSp:0,over:false,busy:false};document.getElementById("main-screen").classList.remove("active");document.getElementById("battle-screen").classList.add("active");ss("my-fighter-svg",mn().svg);ss("en-fighter-svg",en.svg);document.getElementById("my-fighter-label").textContent=mn().name;document.getElementById("en-fighter-label").textContent=en.name;document.getElementById("my-hp-inner").style.width=Math.round(G.hp/G.maxHp*100)+"%";document.getElementById("en-hp-inner").style.width="100%";document.getElementById("battle-log").textContent="";document.getElementById("battle-btns").style.display="grid";document.getElementById("flee-btn-wrap").style.display="block";sBt(true);const bg=document.getElementById("arena-bg-svg");if(bg)bg.innerHTML=BG[ESC[idx]||"grassland"];blog("⚔ "+mn().name+" VS "+en.name);if(G.hp<G.maxHp)blog("我方HP："+G.hp+"/"+G.maxHp);uBrs();}
+function sR(win,en,xp){document.getElementById("battle-screen").classList.remove("active");document.getElementById("result-screen").classList.add("active");const t=document.getElementById("result-title");t.textContent=win?"✨ 勝利！":"💀 敗北...";t.className="rt "+(win?"rw":"rl");document.getElementById("result-sprite").innerHTML=mn().svg;document.getElementById("result-stats").innerHTML=win?"對手："+en.name+"\n獲得EXP：+"+xp+"\nHP："+G.hp+"/"+G.maxHp+"\n飽食："+G.hunger+"\n心情："+G.mood+"\n總勝場："+G.wins:"對手："+en.name+"\nHP剩："+G.hp+"/"+G.maxHp+"\n先去背包恢復再挑戰！";}
+function battleAction(type){if(B.over||B.busy)return;if(type==="special"&&B.sp<SPB){blog("必殺能量不足！");return;}B.busy=true;sBt(false);const en=ENS[B.idx],myAtk=mn().atk+G.wins*2;let dmg;if(type==="special"){dmg=Math.floor(myAtk*(2.2+Math.random()*0.6));B.sp=0;}else{dmg=Math.floor(myAtk*(0.7+Math.random()*0.6));B.sp=Math.min(SPB,B.sp+1);}af("fw-my","mya",0.35);setTimeout(()=>{efx(type==="special"?"special":"slash","right");hff("en-fighter-svg");B.eHp-=dmg;uBrs();blog((type==="special"?"🌟 必殺！":"⚔ 攻擊")+"→ 敵-"+dmg);if(B.eHp<=0){B.over=true;G.wins++;const xp=Math.floor(en.lv*8+20);G.xp+=xp;G.hp=B.mHp;G.sp=B.sp;G.mood=Math.min(100,G.mood+15);G.hunger=Math.max(0,G.hunger-15);efx("boom","right");document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(true,en,xp);bEl();sv();},1200);return;}setTimeout(()=>{af("fw-en","ena",0.35);setTimeout(()=>{B.eSp=Math.min(SPB,B.eSp+1);let ed;if(B.eSp>=SPB){ed=Math.floor(en.atk*(2.0+Math.random()*0.5));B.eSp=0;efx("special","left");blog("😈 敵必殺！→ 我-"+ed);}else{ed=Math.floor(en.atk*(0.7+Math.random()*0.6));efx("hit","left");blog("💢 反擊！→ 我-"+ed);}hff("my-fighter-svg");B.mHp-=ed;uBrs();if(B.mHp<=0){B.over=true;G.hp=Math.max(1,Math.floor(G.maxHp*0.1));G.sp=0;G.mood=Math.max(0,G.mood-20);document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(false,en,0);sv();},1200);return;}B.busy=false;sBt(true);},250);},500);},300);}
+function fleeBattle(){G.hp=B.mHp;G.sp=B.sp;showMain();m("status-msg","逃跑成功！");sv();}
+ld();
 </script>
 </body>
 </html>
