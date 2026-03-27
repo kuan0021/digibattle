@@ -17,7 +17,13 @@ html,body{height:100%;background:#1a2230;overflow:hidden;}
 .zone-monster{height:170px;border:3px solid #4a7a4a;border-radius:10px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
 .zone-monster .lbg{position:absolute;inset:0;z-index:0;}
 .mon-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
-.mon-svg{width:88px;height:88px;animation:idle 1.2s ease-in-out infinite;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.7));}
+
+.mon-sprite{width:88px;height:88px;animation:idle 1.2s ease-in-out infinite;image-rendering:auto;object-fit:contain;}
+.mon-sprite.shake{animation:shake 0.4s ease-in-out;}
+.mon-sprite.happy{animation:happy 0.5s ease-in-out 3;}
+.fsv-div{width:74px;height:74px;display:block;}
+.rs2-div{width:110px;height:110px;animation:idle 1.2s ease-in-out infinite;}
+
 @keyframes idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .mon-svg.shake{animation:shake 0.4s ease-in-out;}
 .mon-svg.happy{animation:happy 0.5s ease-in-out 3;}
@@ -147,9 +153,31 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
     <line x1="78" y1="50" x2="90" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/>
   </svg>
   <div id="save-status" style="font-size:9px;color:#44aa44;"></div>
-  <button class="g" onclick="startGame()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
+  <button class="g" onclick="goToName()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
   <button onclick="newGame()" style="font-size:10px;padding:10px;color:#ffee44;max-width:240px;">↺ 重新開始</button>
-  <div style="font-size:9px;color:#445566;" class="blink">v0.11</div>
+  <div style="font-size:9px;color:#445566;">v0.15</div>
+</div>
+
+<!-- 命名畫面 -->
+<div id="name-screen" class="screen" style="background:#1a2535;align-items:center;justify-content:center;gap:20px;padding:30px 20px;">
+  <div style="font-size:13px;color:#88ccff;letter-spacing:2px;text-align:center;line-height:2;">幫你的<br>數碼獸取名</div>
+  <svg width="88" height="88" viewBox="0 0 100 100" style="animation:idle 1.2s ease-in-out infinite;">
+    <circle cx="50" cy="50" r="28" fill="#111"/>
+    <circle cx="44" cy="46" r="6" fill="#fff"/><circle cx="44" cy="46" r="3.5" fill="#cc0000"/>
+    <circle cx="58" cy="44" r="5" fill="#fff"/><circle cx="58" cy="44" r="3" fill="#cc0000"/>
+    <path d="M38 58 Q50 68 62 58" stroke="#cc0000" stroke-width="2.5" fill="none"/>
+    <rect x="43" y="58" width="4" height="6" rx="1" fill="#fff"/>
+    <rect x="50" y="59" width="4" height="7" rx="1" fill="#fff"/>
+    <line x1="22" y1="50" x2="10" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+    <line x1="78" y1="50" x2="90" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+  </svg>
+  <div style="width:100%;max-width:280px;display:flex;flex-direction:column;gap:10px;">
+    <input id="pet-name-input" type="text" maxlength="8" placeholder="輸入名字（最多8字）"
+      style="font-family:'Press Start 2P',monospace;font-size:11px;background:#0e1c28;color:#e8f0ff;border:2px solid #2a4060;border-radius:8px;padding:14px 12px;width:100%;outline:none;text-align:center;"
+      oninput="checkName()"/>
+    <div id="name-hint" style="font-size:9px;color:#556688;text-align:center;">不填就用預設名字</div>
+  </div>
+  <button class="g" id="name-confirm-btn" onclick="confirmName()" style="font-size:13px;padding:14px;max-width:240px;width:100%;">✓ 確認，出發！</button>
 </div>
 
 <div id="main-screen" class="screen">
@@ -159,7 +187,7 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
       <svg class="lbg" viewBox="0 0 300 170" preserveAspectRatio="xMidYMid slice" id="lcd-bg-svg"></svg>
       <div class="mon-inner">
         <div class="mon-stage" id="stage-label">幼年期I</div>
-        <svg id="my-sprite" class="mon-svg" viewBox="0 0 100 100"></svg>
+        <div id="my-sprite" class="mon-sprite"></div>
         <div class="mon-name" id="my-name">巴達獸</div>
       </div>
       <div id="warn-hunger" class="warn-strip wh" style="display:none;">⚠ 肚子餓了！快去背包餵食！</div>
@@ -204,7 +232,10 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
     <div id="tab-bag" class="tab-content">
       <div class="st">背包道具</div>
       <div class="bg-g" id="bag-grid"></div>
-      <div class="mb" id="bag-msg">選擇道具使用！</div>
+      <div class="mb" id="bag-msg">道具使用後需要等待冷卻時間！</div>
+      <div class="br s" style="margin-top:4px;">
+        <button onclick="resetAllItems()" style="font-size:10px;padding:10px;color:#ffee44;background:#1a2a10;box-shadow:0 3px 0 #0a1408,0 0 0 2px #446622;">🧪 測試用：全部恢復</button>
+      </div>
     </div>
 
     <!-- 對戰 tab -->
@@ -240,13 +271,13 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
     <div class="fw" id="fw-my">
       <div class="hs"><div class="hi mh" id="my-hp-inner" style="width:100%"></div></div>
       <div class="ss2"><div class="si2" id="my-sp-inner" style="width:0%"></div></div>
-      <svg id="my-fighter-svg" class="fsv" viewBox="0 0 100 100"></svg>
+      <div id="my-fighter-svg" class="fsv-div"></div>
       <div class="fl" id="my-fighter-label">我方</div>
     </div>
     <div class="fw" id="fw-en">
       <div class="hs"><div class="hi eh" id="en-hp-inner" style="width:100%"></div></div>
       <div class="ss2" style="opacity:0.4;"><div class="si2" id="en-sp-inner" style="width:0%"></div></div>
-      <svg id="en-fighter-svg" class="fsv" viewBox="0 0 100 100"></svg>
+      <div id="en-fighter-svg" class="fsv-div"></div>
       <div class="fl" id="en-fighter-label">敵方</div>
     </div>
     <div class="efx" id="effect-layer"></div>
@@ -263,7 +294,7 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
 
 <div id="result-screen" class="screen">
   <div class="rt" id="result-title">勝利！</div>
-  <svg id="result-sprite" class="rs2" viewBox="0 0 100 100"></svg>
+  <div id="result-sprite" class="rs2-div"></div>
   <div class="rst" id="result-stats"></div>
   <button class="g" onclick="backToMain()" style="font-size:12px;padding:14px;max-width:300px;">▶ 繼續冒險</button>
 </div>
@@ -283,38 +314,212 @@ city:`<rect width="300" height="170" fill="#1a2030"/><rect x="51" y="20" width="
 sewer:`<rect width="300" height="170" fill="#1a1a10"/><rect y="104" width="300" height="66" fill="#0f1408"/><rect x="0" y="10" width="15" height="160" fill="#222218"/><rect x="26" y="10" width="11" height="100" fill="#1e1e14"/><circle cx="45" cy="46" r="3" fill="#88ff44" opacity="0.4"/>`,
 volcano:`<rect width="300" height="170" fill="#1a0800"/><polygon points="75,0 130,104 20,104" fill="#2a1008"/><polygon points="191,7 238,104 144,104" fill="#251008"/><rect y="104" width="300" height="66" fill="#0f0500"/><ellipse cx="75" cy="4" rx="17" ry="9" fill="#ff4400" opacity="0.8"/>`,
 };
-const MSC={botamon:'grassland',koromon:'grassland',agumon:'grassland',gabumon:'grassland',greymon:'volcano',garurumon:'city',metalgreymon:'city',weregarurumon:'sewer',wargreymon:'volcano',omnimon:'city'};
+
+const IMG_SRC='./monsters.png';
+let IMG_LOADED=false;
+const _img=new Image();
+_img.onload=()=>{IMG_LOADED=true;rf();};
+_img.onerror=()=>console.warn('圖片載入失敗：'+IMG_SRC);
+_img.src=IMG_SRC;
+const IMG_W=1080,IMG_H=726;
+
+// 怪獸資料：sprite座標 + 基礎數值
+const MONS={
+  pichu:        {name:"皮丘",     stage:"幼年期", type:"共通", lv:1,  atk:10, hp:40,  xpNeeded:20,  sx:467,sy:15, sw:146,sh:143},
+  elekid:       {name:"電擊小子", stage:"成長期", type:"力量", lv:5,  atk:30, hp:100, xpNeeded:80,  sx:177,sy:160,sw:146,sh:143},
+  pikachu:      {name:"皮卡丘",   stage:"成長期", type:"體質", lv:5,  atk:28, hp:120, xpNeeded:80,  sx:467,sy:160,sw:146,sh:143},
+  taillow:      {name:"小箭雀",   stage:"成長期", type:"敏捷", lv:5,  atk:25, hp:100, xpNeeded:80,  sx:757,sy:160,sw:146,sh:143},
+  tyrunt:       {name:"暴龍獸",   stage:"成熟期", type:"力量", lv:10, atk:70, hp:220, xpNeeded:200, sx:55, sy:305,sw:120,sh:143},
+  electabuzz:   {name:"電擊獸",   stage:"成熟期", type:"力量", lv:10, atk:65, hp:200, xpNeeded:200, sx:177,sy:305,sw:146,sh:143},
+  pachirisu:    {name:"帕奇利茲", stage:"成熟期", type:"力量", lv:10, atk:60, hp:200, xpNeeded:200, sx:322,sy:305,sw:146,sh:143},
+  dedenne:      {name:"大咚咚鼠", stage:"成熟期", type:"體質", lv:10, atk:60, hp:240, xpNeeded:200, sx:467,sy:305,sw:146,sh:143},
+  emolga:       {name:"電飛鼠",   stage:"成熟期", type:"體質", lv:10, atk:58, hp:200, xpNeeded:200, sx:612,sy:305,sw:146,sh:143},
+  fletchling:   {name:"烈箭雀",   stage:"成熟期", type:"敏捷", lv:10, atk:62, hp:210, xpNeeded:200, sx:757,sy:305,sw:146,sh:143},
+  murkrow:      {name:"黑暗鴉",   stage:"成熟期", type:"敏捷", lv:10, atk:60, hp:200, xpNeeded:200, sx:902,sy:305,sw:143,sh:143},
+  tyrantrum:    {name:"大暴龍獸", stage:"完全體", type:"力量", lv:20, atk:140,hp:400, xpNeeded:500, sx:55, sy:450,sw:120,sh:143},
+  electivire:   {name:"電擊魔獸", stage:"完全體", type:"力量", lv:20, atk:130,hp:380, xpNeeded:500, sx:177,sy:450,sw:146,sh:143},
+  togekiss:     {name:"大奇利茲", stage:"完全體", type:"力量", lv:20, atk:120,hp:380, xpNeeded:500, sx:322,sy:450,sw:146,sh:143},
+  raichu:       {name:"雷丘",     stage:"完全體", type:"體質", lv:20, atk:120,hp:420, xpNeeded:500, sx:467,sy:450,sw:146,sh:143},
+  altaria:      {name:"龍捲雲",   stage:"完全體", type:"體質", lv:20, atk:115,hp:400, xpNeeded:500, sx:612,sy:450,sw:146,sh:143},
+  talonflame:   {name:"炎雀",     stage:"完全體", type:"敏捷", lv:20, atk:125,hp:390, xpNeeded:500, sx:757,sy:450,sw:146,sh:143},
+  honchkrow:    {name:"大黑暗鴉", stage:"完全體", type:"敏捷", lv:20, atk:120,hp:380, xpNeeded:500, sx:902,sy:450,sw:143,sh:143},
+  tyranitarex:  {name:"暴龍獸王", stage:"究極體", type:"力量", lv:35, atk:260,hp:700, xpNeeded:999, sx:55, sy:593,sw:120,sh:133},
+  superelectivire:{name:"超電擊魔",stage:"究極體", type:"力量", lv:35, atk:250,hp:680, xpNeeded:999, sx:177,sy:593,sw:146,sh:133},
+  supertogekiss:{name:"超奇利茲", stage:"究極體", type:"力量", lv:35, atk:240,hp:680, xpNeeded:999, sx:322,sy:593,sw:146,sh:133},
+  superraichu:  {name:"超丘",     stage:"究極體", type:"體質", lv:35, atk:240,hp:720, xpNeeded:999, sx:467,sy:593,sw:146,sh:133},
+  zapdos:       {name:"天雷雲",   stage:"究極體", type:"體質", lv:35, atk:235,hp:700, xpNeeded:999, sx:612,sy:593,sw:146,sh:133},
+  moltres:      {name:"烈炎雀",   stage:"究極體", type:"敏捷", lv:35, atk:245,hp:690, xpNeeded:999, sx:757,sy:593,sw:146,sh:133},
+  darkrai:      {name:"黑皇鴉",   stage:"究極體", type:"敏捷", lv:35, atk:240,hp:680, xpNeeded:999, sx:902,sy:593,sw:143,sh:133},
+};
+
+// 場景對應
+const MSC={
+  pichu:'grassland',
+  elekid:'city',pikachu:'grassland',taillow:'grassland',
+  tyrunt:'volcano',electabuzz:'city',pachirisu:'grassland',
+  dedenne:'grassland',emolga:'city',fletchling:'grassland',murkrow:'sewer',
+  tyrantrum:'volcano',electivire:'city',togekiss:'grassland',
+  raichu:'city',altaria:'grassland',talonflame:'volcano',honchkrow:'sewer',
+  tyranitarex:'volcano',superelectivire:'city',supertogekiss:'grassland',
+  superraichu:'city',zapdos:'city',moltres:'volcano',darkrai:'sewer',
+};
 const ESC=['grassland','grassland','sewer','volcano','city'];
-const MS={
-botamon:`<circle cx="50" cy="50" r="28" fill="#111"/><circle cx="44" cy="46" r="6" fill="#fff"/><circle cx="44" cy="46" r="3.5" fill="#cc0000"/><circle cx="58" cy="44" r="5" fill="#fff"/><circle cx="58" cy="44" r="3" fill="#cc0000"/><path d="M38 58 Q50 68 62 58" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="43" y="58" width="4" height="6" rx="1" fill="#fff"/><rect x="50" y="59" width="4" height="7" rx="1" fill="#fff"/><line x1="22" y1="50" x2="10" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="78" y1="50" x2="90" y2="46" stroke="#111" stroke-width="5" stroke-linecap="round"/>`,
-koromon:`<ellipse cx="50" cy="55" rx="26" ry="22" fill="#111"/><circle cx="50" cy="36" r="20" fill="#111"/><line x1="44" y1="18" x2="42" y2="8" stroke="#111" stroke-width="3"/><circle cx="42" cy="6" r="3" fill="#cc0000"/><line x1="52" y1="17" x2="54" y2="7" stroke="#111" stroke-width="3"/><circle cx="54" cy="5" r="3" fill="#cc0000"/><circle cx="43" cy="34" r="6" fill="#fff"/><circle cx="43" cy="34" r="3.5" fill="#cc0000"/><circle cx="57" cy="32" r="5" fill="#fff"/><circle cx="57" cy="32" r="3" fill="#cc0000"/><path d="M37 46 Q50 56 63 46" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="42" y="46" width="4" height="6" rx="1" fill="#fff"/><rect x="49" y="47" width="4" height="7" rx="1" fill="#fff"/><rect x="56" y="46" width="4" height="6" rx="1" fill="#fff"/>`,
-agumon:`<ellipse cx="50" cy="62" rx="20" ry="18" fill="#111"/><circle cx="50" cy="34" r="22" fill="#111"/><circle cx="41" cy="30" r="7" fill="#fff"/><circle cx="41" cy="30" r="4" fill="#cc0000"/><circle cx="59" cy="28" r="6" fill="#fff"/><circle cx="59" cy="28" r="3.5" fill="#cc0000"/><path d="M36 44 Q50 56 64 44" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="40" y="44" width="4" height="7" rx="1" fill="#fff"/><rect x="47" y="45" width="5" height="8" rx="1" fill="#fff"/><rect x="55" y="44" width="4" height="7" rx="1" fill="#fff"/><line x1="30" y1="58" x2="16" y2="52" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="70" y1="58" x2="84" y2="52" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="38" y1="76" x2="30" y2="92" stroke="#111" stroke-width="6" stroke-linecap="round"/><line x1="62" y1="76" x2="70" y2="92" stroke="#111" stroke-width="6" stroke-linecap="round"/>`,
-gabumon:`<ellipse cx="50" cy="60" rx="22" ry="20" fill="#111"/><circle cx="50" cy="32" r="22" fill="#111"/><polygon points="38,12 34,2 42,10" fill="#111"/><polygon points="62,10 68,1 60,10" fill="#111"/><circle cx="40" cy="30" r="7" fill="#fff"/><circle cx="40" cy="30" r="4" fill="#cc0000"/><circle cx="60" cy="29" r="6" fill="#fff"/><circle cx="60" cy="29" r="3.5" fill="#cc0000"/><path d="M36 44 Q50 55 64 44" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="41" y="44" width="4" height="7" rx="1" fill="#fff"/><rect x="48" y="45" width="4" height="8" rx="1" fill="#fff"/><rect x="55" y="44" width="4" height="7" rx="1" fill="#fff"/><line x1="28" y1="60" x2="14" y2="54" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="72" y1="60" x2="86" y2="54" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="38" y1="78" x2="30" y2="94" stroke="#111" stroke-width="6" stroke-linecap="round"/><line x1="62" y1="78" x2="70" y2="94" stroke="#111" stroke-width="6" stroke-linecap="round"/>`,
-greymon:`<rect x="26" y="30" width="48" height="42" rx="8" fill="#111"/><rect x="30" y="16" width="40" height="28" rx="6" fill="#111"/><polygon points="32,16 26,2 38,12" fill="#111"/><polygon points="68,16 74,2 62,12" fill="#111"/><polygon points="50,14 44,4 56,4" fill="#111"/><circle cx="40" cy="26" r="7" fill="#fff"/><circle cx="40" cy="26" r="4" fill="#cc0000"/><circle cx="60" cy="24" r="6" fill="#fff"/><circle cx="60" cy="24" r="3.5" fill="#cc0000"/><path d="M34 38 Q50 50 66 38" stroke="#cc0000" stroke-width="3" fill="none"/><rect x="38" y="38" width="5" height="8" rx="1" fill="#fff"/><rect x="46" y="39" width="6" height="9" rx="1" fill="#fff"/><rect x="55" y="38" width="5" height="8" rx="1" fill="#fff"/><line x1="26" y1="50" x2="10" y2="44" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="74" y1="50" x2="90" y2="44" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="36" y1="70" x2="26" y2="90" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="64" y1="70" x2="74" y2="90" stroke="#111" stroke-width="7" stroke-linecap="round"/>`,
-garurumon:`<ellipse cx="50" cy="55" rx="28" ry="24" fill="#111"/><ellipse cx="50" cy="30" rx="24" ry="20" fill="#111"/><polygon points="36,14 30,0 42,12" fill="#111"/><polygon points="64,12 70,0 58,12" fill="#111"/><polygon points="50,12 45,2 55,2" fill="#111"/><circle cx="39" cy="28" r="8" fill="#fff"/><circle cx="39" cy="28" r="5" fill="#cc0000"/><circle cx="61" cy="26" r="7" fill="#fff"/><circle cx="61" cy="26" r="4" fill="#cc0000"/><path d="M34 42 Q50 54 66 42" stroke="#cc0000" stroke-width="3" fill="none"/><rect x="38" y="42" width="5" height="8" rx="1" fill="#fff"/><rect x="46" y="43" width="6" height="10" rx="1" fill="#fff"/><rect x="55" y="42" width="5" height="8" rx="1" fill="#fff"/><line x1="22" y1="56" x2="6" y2="50" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="78" y1="56" x2="94" y2="50" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="36" y1="74" x2="26" y2="92" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="64" y1="74" x2="74" y2="92" stroke="#111" stroke-width="7" stroke-linecap="round"/>`,
-metalgreymon:`<rect x="22" y="28" width="56" height="46" rx="6" fill="#111"/><rect x="28" y="14" width="44" height="26" rx="4" fill="#111"/><rect x="14" y="36" width="16" height="8" rx="2" fill="#111"/><rect x="70" y="36" width="16" height="8" rx="2" fill="#111"/><line x1="6" y1="40" x2="14" y2="40" stroke="#111" stroke-width="6" stroke-linecap="round"/><line x1="86" y1="40" x2="94" y2="40" stroke="#111" stroke-width="6" stroke-linecap="round"/><circle cx="40" cy="26" r="8" fill="#fff"/><circle cx="40" cy="26" r="5" fill="#cc0000"/><circle cx="62" cy="24" r="7" fill="#fff"/><circle cx="62" cy="24" r="4" fill="#cc0000"/><path d="M32 40 Q50 54 68 40" stroke="#cc0000" stroke-width="3" fill="none"/><rect x="36" y="40" width="6" height="9" rx="1" fill="#fff"/><rect x="45" y="41" width="7" height="10" rx="1" fill="#fff"/><rect x="55" y="40" width="6" height="9" rx="1" fill="#fff"/><line x1="36" y1="72" x2="26" y2="92" stroke="#111" stroke-width="8" stroke-linecap="round"/><line x1="64" y1="72" x2="74" y2="92" stroke="#111" stroke-width="8" stroke-linecap="round"/><rect x="40" y="10" width="20" height="8" rx="2" fill="#cc0000"/>`,
-weregarurumon:`<ellipse cx="50" cy="56" rx="26" ry="22" fill="#111"/><ellipse cx="50" cy="28" rx="22" ry="20" fill="#111"/><polygon points="34,12 26,0 40,10" fill="#111"/><polygon points="66,10 74,0 60,10" fill="#111"/><circle cx="38" cy="26" r="9" fill="#fff"/><circle cx="38" cy="26" r="5.5" fill="#cc0000"/><circle cx="63" cy="24" r="8" fill="#fff"/><circle cx="63" cy="24" r="5" fill="#cc0000"/><path d="M32 40 Q50 54 68 40" stroke="#cc0000" stroke-width="3" fill="none"/><rect x="36" y="40" width="6" height="9" rx="1" fill="#fff"/><rect x="44" y="41" width="7" height="11" rx="1" fill="#fff"/><rect x="54" y="40" width="6" height="9" rx="1" fill="#fff"/><line x1="22" y1="50" x2="4" y2="40" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="78" y1="50" x2="96" y2="40" stroke="#111" stroke-width="7" stroke-linecap="round"/><line x1="38" y1="74" x2="26" y2="94" stroke="#111" stroke-width="8" stroke-linecap="round"/><line x1="62" y1="74" x2="74" y2="94" stroke="#111" stroke-width="8" stroke-linecap="round"/>`,
-wargreymon:`<ellipse cx="50" cy="55" rx="24" ry="22" fill="#111"/><circle cx="50" cy="28" r="24" fill="#111"/><polygon points="50,6 44,0 50,4 56,0" fill="#cc0000"/><polygon points="28,14 18,8 26,18" fill="#111"/><polygon points="72,14 82,8 74,18" fill="#111"/><circle cx="38" cy="24" r="9" fill="#fff"/><circle cx="38" cy="24" r="6" fill="#cc0000"/><circle cx="64" cy="22" r="8" fill="#fff"/><circle cx="64" cy="22" r="5" fill="#cc0000"/><path d="M30 38 Q50 52 70 38" stroke="#cc0000" stroke-width="3.5" fill="none"/><rect x="35" y="38" width="6" height="10" rx="1" fill="#fff"/><rect x="44" y="39" width="7" height="12" rx="1" fill="#fff"/><rect x="54" y="38" width="7" height="10" rx="1" fill="#fff"/><line x1="26" y1="52" x2="6" y2="42" stroke="#111" stroke-width="8" stroke-linecap="round"/><line x1="74" y1="52" x2="94" y2="42" stroke="#111" stroke-width="8" stroke-linecap="round"/><line x1="36" y1="74" x2="24" y2="96" stroke="#111" stroke-width="9" stroke-linecap="round"/><line x1="64" y1="74" x2="76" y2="96" stroke="#111" stroke-width="9" stroke-linecap="round"/>`,
-omnimon:`<ellipse cx="50" cy="56" rx="22" ry="20" fill="#111"/><circle cx="50" cy="26" r="24" fill="#111"/><polygon points="50,4 44,0 50,2 56,0" fill="#cc0000"/><polygon points="32,8 22,2 30,12" fill="#111"/><polygon points="68,8 78,2 70,12" fill="#111"/><circle cx="37" cy="22" r="10" fill="#fff"/><circle cx="37" cy="22" r="6.5" fill="#cc0000"/><circle cx="65" cy="20" r="9" fill="#fff"/><circle cx="65" cy="20" r="6" fill="#cc0000"/><path d="M28 36 Q50 52 72 36" stroke="#cc0000" stroke-width="4" fill="none"/><rect x="33" y="36" width="7" height="11" rx="1" fill="#fff"/><rect x="43" y="37" width="8" height="13" rx="1" fill="#fff"/><rect x="54" y="36" width="7" height="11" rx="1" fill="#fff"/><line x1="28" y1="52" x2="4" y2="40" stroke="#111" stroke-width="9" stroke-linecap="round"/><line x1="72" y1="52" x2="96" y2="40" stroke="#111" stroke-width="9" stroke-linecap="round"/><line x1="36" y1="72" x2="22" y2="96" stroke="#111" stroke-width="10" stroke-linecap="round"/><line x1="64" y1="72" x2="78" y2="96" stroke="#111" stroke-width="10" stroke-linecap="round"/>`,
+
+// Sprite 顯示函式：產生 CSS background-position 字串
+function spriteStyle(id,size=88){
+  const m=MONS[id];if(!m)return'';
+  const scale=size/Math.max(m.sw,m.sh);
+  const bw=Math.round(IMG_W*scale);
+  const bh=Math.round(IMG_H*scale);
+  const bx=Math.round(-m.sx*scale);
+  const by=Math.round(-m.sy*scale);
+  const dw=Math.round(m.sw*scale);
+  const dh=Math.round(m.sh*scale);
+  return `width:${dw}px;height:${dh}px;background:#1a2a1a url('${IMG_SRC}') ${bx}px ${by}px / ${bw}px ${bh}px no-repeat;display:inline-block;image-rendering:pixelated;`;
+}
+
+function setSpriteEl(el,id,size=88){
+  if(!el)return;
+  const m=MONS[id];if(!m){el.style.background='#1a2a1a';return;}
+  const scale=size/Math.max(m.sw,m.sh);
+  const bw=Math.round(IMG_W*scale);
+  const bh=Math.round(IMG_H*scale);
+  const bx=Math.round(-m.sx*scale);
+  const by=Math.round(-m.sy*scale);
+  const dw=Math.round(m.sw*scale);
+  const dh=Math.round(m.sh*scale);
+  el.style.width=dw+'px';
+  el.style.height=dh+'px';
+  el.style.backgroundImage='url("'+IMG_SRC+'")';
+  el.style.backgroundPosition=bx+'px '+by+'px';
+  el.style.backgroundSize=bw+'px '+bh+'px';
+  el.style.backgroundRepeat='no-repeat';
+  el.style.display='inline-block';
+  el.style.imageRendering='auto';
+}
+
+// 進化路線（含進化條件）
+const EP={
+  pichu:[
+    {id:"elekid",  check:()=>G.xp>=20 && (G.trainCount||0)>(G.playCount||0)},
+    {id:"pikachu", check:()=>G.xp>=20 && G.wins>=0 && G.hunger>=50},
+    {id:"taillow", check:()=>G.xp>=20 && G.steps>=100},
+  ],
+  elekid:[
+    {id:"tyrunt",     check:()=>G.xp>=80 && G.wins>=3 && (G.trainCount||0)>=8},
+    {id:"electabuzz", check:()=>G.xp>=80 && G.wins>=5},
+    {id:"pachirisu",  check:()=>G.xp>=80 && G.steps>=200},
+  ],
+  pikachu:[
+    {id:"pachirisu",  check:()=>G.xp>=80 && G.steps>=200},
+    {id:"dedenne",    check:()=>G.xp>=80 && G.hunger>=60 && G.mood>=60},
+    {id:"emolga",     check:()=>G.xp>=80 && G.steps>=300},
+  ],
+  taillow:[
+    {id:"emolga",     check:()=>G.xp>=80 && G.steps>=300},
+    {id:"fletchling", check:()=>G.xp>=80 && G.steps>=500},
+    {id:"murkrow",    check:()=>G.xp>=80 && G.wins>=3},
+  ],
+  tyrunt:[
+    {id:"tyrantrum",  check:()=>G.xp>=200 && G.wins>=10 && (G.trainCount||0)>=20},
+    {id:"electivire", check:()=>G.xp>=200 && G.wins>=8},
+  ],
+  electabuzz:[
+    {id:"electivire", check:()=>G.xp>=200 && G.wins>=8},
+    {id:"togekiss",   check:()=>G.xp>=200 && G.steps>=800},
+    {id:"tyrantrum",  check:()=>G.xp>=200 && G.wins>=10 && (G.trainCount||0)>=20},
+  ],
+  pachirisu:[
+    {id:"togekiss",   check:()=>G.xp>=200 && G.steps>=800},
+    {id:"electivire", check:()=>G.xp>=200 && G.wins>=8},
+  ],
+  dedenne:[
+    {id:"raichu",     check:()=>G.xp>=200 && G.hunger>=70 && G.mood>=70},
+    {id:"altaria",    check:()=>G.xp>=200 && G.steps>=1000},
+    {id:"togekiss",   check:()=>G.xp>=200 && G.steps>=800},
+  ],
+  emolga:[
+    {id:"altaria",    check:()=>G.xp>=200 && G.steps>=1000},
+    {id:"talonflame", check:()=>G.xp>=200 && G.steps>=1200},
+  ],
+  fletchling:[
+    {id:"talonflame", check:()=>G.xp>=200 && G.steps>=1200},
+    {id:"honchkrow",  check:()=>G.xp>=200 && G.wins>=5},
+    {id:"altaria",    check:()=>G.xp>=200 && G.steps>=1000},
+  ],
+  murkrow:[
+    {id:"honchkrow",  check:()=>G.xp>=200 && G.wins>=5},
+    {id:"talonflame", check:()=>G.xp>=200 && G.steps>=1200},
+  ],
+  tyrantrum:[
+    {id:"tyranitarex",    check:()=>G.xp>=500 && G.wins>=20 && (G.trainCount||0)>=40},
+    {id:"superelectivire",check:()=>G.xp>=500 && G.wins>=15},
+  ],
+  electivire:[
+    {id:"superelectivire",check:()=>G.xp>=500 && G.wins>=15},
+    {id:"supertogekiss",  check:()=>G.xp>=500 && G.steps>=2000},
+  ],
+  togekiss:[
+    {id:"supertogekiss",  check:()=>G.xp>=500 && G.steps>=2000},
+    {id:"superraichu",    check:()=>G.xp>=500 && G.hunger>=80 && G.mood>=80},
+  ],
+  raichu:[
+    {id:"superraichu",    check:()=>G.xp>=500 && G.hunger>=80 && G.mood>=80},
+    {id:"zapdos",         check:()=>G.xp>=500 && G.steps>=2500},
+    {id:"supertogekiss",  check:()=>G.xp>=500 && G.steps>=2000},
+  ],
+  altaria:[
+    {id:"zapdos",         check:()=>G.xp>=500 && G.steps>=2500},
+    {id:"superraichu",    check:()=>G.xp>=500 && G.hunger>=80 && G.mood>=80},
+  ],
+  talonflame:[
+    {id:"moltres",        check:()=>G.xp>=500 && G.steps>=3000},
+    {id:"darkrai",        check:()=>G.xp>=500 && G.wins>=12},
+    {id:"zapdos",         check:()=>G.xp>=500 && G.steps>=2500},
+  ],
+  honchkrow:[
+    {id:"darkrai",        check:()=>G.xp>=500 && G.wins>=12},
+    {id:"moltres",        check:()=>G.xp>=500 && G.steps>=3000},
+  ],
 };
-const ES={
-tenshi:`<circle cx="50" cy="50" r="25" fill="#111"/><ellipse cx="50" cy="22" rx="18" ry="6" fill="none" stroke="#cc0000" stroke-width="3"/><circle cx="42" cy="46" r="6" fill="#fff"/><circle cx="42" cy="46" r="3.5" fill="#cc0000"/><circle cx="58" cy="44" r="5" fill="#fff"/><circle cx="58" cy="44" r="3" fill="#cc0000"/><path d="M38 58 Q50 66 62 58" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="43" y="58" width="4" height="6" rx="1" fill="#fff"/><rect x="50" y="59" width="4" height="7" rx="1" fill="#fff"/>`,
-gabumon2:`<ellipse cx="50" cy="60" rx="22" ry="20" fill="#111"/><circle cx="50" cy="32" r="22" fill="#111"/><polygon points="38,12 34,2 42,10" fill="#111"/><polygon points="62,10 68,1 60,10" fill="#111"/><circle cx="40" cy="30" r="7" fill="#fff"/><circle cx="40" cy="30" r="4" fill="#cc0000"/><circle cx="60" cy="29" r="6" fill="#fff"/><circle cx="60" cy="29" r="3.5" fill="#cc0000"/><path d="M36 44 Q50 55 64 44" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="41" y="44" width="4" height="7" rx="1" fill="#fff"/><rect x="48" y="45" width="4" height="8" rx="1" fill="#fff"/><line x1="28" y1="60" x2="14" y2="54" stroke="#111" stroke-width="5" stroke-linecap="round"/><line x1="72" y1="60" x2="86" y2="54" stroke="#111" stroke-width="5" stroke-linecap="round"/>`,
-tentomon:`<ellipse cx="50" cy="58" rx="20" ry="16" fill="#111"/><ellipse cx="50" cy="34" rx="18" ry="18" fill="#111"/><line x1="30" y1="38" x2="10" y2="24" stroke="#111" stroke-width="4" stroke-linecap="round"/><line x1="70" y1="38" x2="90" y2="24" stroke="#111" stroke-width="4" stroke-linecap="round"/><line x1="28" y1="50" x2="8" y2="46" stroke="#111" stroke-width="4" stroke-linecap="round"/><line x1="72" y1="50" x2="92" y2="46" stroke="#111" stroke-width="4" stroke-linecap="round"/><circle cx="40" cy="30" r="7" fill="#fff"/><circle cx="40" cy="30" r="4" fill="#cc0000"/><circle cx="60" cy="28" r="7" fill="#fff"/><circle cx="60" cy="28" r="4" fill="#cc0000"/><path d="M36 42 Q50 54 64 42" stroke="#cc0000" stroke-width="2.5" fill="none"/><rect x="42" y="42" width="4" height="7" rx="1" fill="#fff"/><rect x="49" y="43" width="4" height="8" rx="1" fill="#fff"/>`,
-birdramon:`<ellipse cx="50" cy="55" rx="18" ry="22" fill="#111"/><ellipse cx="50" cy="28" rx="22" ry="18" fill="#111"/><path d="M10 40 Q30 20 28 50" stroke="#111" stroke-width="8" fill="#111"/><path d="M90 40 Q70 20 72 50" stroke="#111" stroke-width="8" fill="#111"/><circle cx="40" cy="26" r="8" fill="#fff"/><circle cx="40" cy="26" r="5" fill="#cc0000"/><circle cx="62" cy="24" r="7" fill="#fff"/><circle cx="62" cy="24" r="4" fill="#cc0000"/><path d="M34 38 Q50 50 66 38" stroke="#cc0000" stroke-width="3" fill="none"/><rect x="38" y="38" width="5" height="8" rx="1" fill="#fff"/><rect x="46" y="39" width="6" height="9" rx="1" fill="#fff"/><rect x="55" y="38" width="5" height="8" rx="1" fill="#fff"/>`,
-devimon:`<ellipse cx="50" cy="56" rx="22" ry="20" fill="#111"/><ellipse cx="50" cy="28" rx="22" ry="22" fill="#111"/><polygon points="34,8 26,0 36,12" fill="#111"/><polygon points="66,8 74,0 64,12" fill="#111"/><path d="M10 30 Q22 20 22 50" stroke="#111" stroke-width="10" fill="#111"/><path d="M90 30 Q78 20 78 50" stroke="#111" stroke-width="10" fill="#111"/><circle cx="37" cy="25" r="10" fill="#fff"/><circle cx="37" cy="25" r="6.5" fill="#cc0000"/><circle cx="65" cy="22" r="9" fill="#fff"/><circle cx="65" cy="22" r="6" fill="#cc0000"/><path d="M30 40 Q50 56 70 40" stroke="#cc0000" stroke-width="3.5" fill="none"/><rect x="34" y="40" width="7" height="10" rx="1" fill="#fff"/><rect x="44" y="41" width="8" height="12" rx="1" fill="#fff"/><rect x="54" y="40" width="7" height="10" rx="1" fill="#fff"/>`,
-};
-const MONS={botamon:{name:"巴達獸",svg:MS.botamon,stage:"幼年期I",lv:1,atk:8,hp:40,xpNeeded:20},koromon:{name:"可羅獸",svg:MS.koromon,stage:"幼年期II",lv:3,atk:18,hp:80,xpNeeded:60},agumon:{name:"亞古獸",svg:MS.agumon,stage:"成長期",lv:8,atk:40,hp:160,xpNeeded:150},gabumon:{name:"加布獸",svg:MS.gabumon,stage:"成長期",lv:8,atk:38,hp:150,xpNeeded:150},greymon:{name:"暴龍獸",svg:MS.greymon,stage:"成熟期",lv:15,atk:80,hp:300,xpNeeded:400},garurumon:{name:"加魯魯獸",svg:MS.garurumon,stage:"成熟期",lv:15,atk:75,hp:280,xpNeeded:400},metalgreymon:{name:"鋼鐵暴龍獸",svg:MS.metalgreymon,stage:"完全體",lv:25,atk:150,hp:500,xpNeeded:999},weregarurumon:{name:"狼人加魯魯",svg:MS.weregarurumon,stage:"完全體",lv:25,atk:140,hp:480,xpNeeded:999},wargreymon:{name:"戰鬥暴龍獸",svg:MS.wargreymon,stage:"究極體",lv:40,atk:250,hp:800,xpNeeded:9999},omnimon:{name:"究極天使獸",svg:MS.omnimon,stage:"究極合體",lv:50,atk:350,hp:1000,xpNeeded:9999}};
-const EP={botamon:["koromon"],koromon:["agumon","gabumon"],agumon:["greymon"],gabumon:["garurumon"],greymon:["metalgreymon"],garurumon:["weregarurumon"],metalgreymon:["wargreymon"],weregarurumon:["omnimon"]};
-const ENS=[{name:"天使獸",svg:ES.tenshi,lv:2,atk:10,hp:30},{name:"加布獸",svg:ES.gabumon2,lv:5,atk:22,hp:70},{name:"甲蟲獸",svg:ES.tentomon,lv:8,atk:35,hp:120},{name:"火鳥獸",svg:ES.birdramon,lv:14,atk:70,hp:250},{name:"惡魔獸",svg:ES.devimon,lv:20,atk:120,hp:400}];
+
+// 對戰用敵人（用原有 SVG，之後可換圖）
+const ENS=[
+  {id:"pichu",    name:"皮丘",   lv:2,  atk:10, hp:35,  sx:467,sy:15, sw:146,sh:143},
+  {id:"elekid",   name:"電擊小子",lv:5, atk:28, hp:90,  sx:177,sy:160,sw:146,sh:143},
+  {id:"pachirisu",name:"帕奇利茲",lv:10,atk:58, hp:190, sx:322,sy:305,sw:146,sh:143},
+  {id:"dedenne",  name:"大咚咚鼠",lv:15,atk:80, hp:300, sx:467,sy:305,sw:146,sh:143},
+  {id:"raichu",   name:"雷丘",   lv:20, atk:118,hp:400, sx:467,sy:450,sw:146,sh:143},
+];
+
 const ITS={meat:{name:"烤肉",icon:"🍖",desc:"飽食度+50",ef(){G.hunger=Math.min(100,G.hunger+50);m("status-msg","餵了烤肉！飽食大回！");an("happy");}},snack:{name:"糖果",icon:"🍬",desc:"心情+40",ef(){G.mood=Math.min(100,G.mood+40);m("status-msg","餵了糖果！心情好！");an("happy");}},potion:{name:"急救藥",icon:"💊",desc:"HP恢復50%",ef(){G.hp=Math.min(G.maxHp,G.hp+Math.floor(G.maxHp*0.5));m("status-msg","使用急救藥！HP大回！");}},vitamin:{name:"維他命",icon:"⭐",desc:"EXP+30",ef(){G.xp+=30;m("status-msg","吃了維他命！+30 EXP！");bEl();}}};
 
 // ===== 存檔 =====
-const HPH=12,MPH=8,HPHP=5,SPM=5,K="digibattle";
-function dG(){return{monId:"botamon",hp:40,maxHp:40,xp:0,wins:0,steps:0,sp:0,hunger:80,mood:80,lastSeen:Date.now(),bag:{meat:3,snack:3,potion:2,vitamin:1}};}
+const HPH=12,MPH=8,HPHP=5,SPM=5,
+      HP_REGEN_PER_HOUR=8,   // 每小時回覆 HP（消耗飽食度）
+      HUNGER_FOR_REGEN=6,    // 每小時回HP消耗的飽食度
+      K="digibattle";
+function dG(){return{monId:"pichu",hp:40,maxHp:40,xp:0,wins:0,steps:0,sp:0,hunger:80,mood:80,lastSeen:Date.now(),bag:{meat:3,snack:3,potion:2,vitamin:1},petName:"",trainCount:0,playCount:0,lastRefill:{meat:0,snack:0,potion:0,vitamin:0}};}
 let G=dG();
+function goToName(){
+  // 有存檔就直接進遊戲，新遊戲才取名
+  if(localStorage.getItem(K)){startGame();return;}
+  document.getElementById("title-screen").classList.remove("active");
+  document.getElementById("name-screen").classList.add("active");
+  setTimeout(()=>document.getElementById("pet-name-input").focus(),300);
+}
+function checkName(){
+  const v=document.getElementById("pet-name-input").value.trim();
+  document.getElementById("name-hint").textContent=v?"「"+v+"」，不錯的名字！":"不填就用預設名字「巴達獸」";
+}
+function confirmName(){
+  const v=document.getElementById("pet-name-input").value.trim();
+  if(v) G.petName=v;
+  document.getElementById("name-screen").classList.remove("active");
+  startGame();
+}
 function sv(){try{G.lastSeen=Date.now();localStorage.setItem(K,JSON.stringify(G));const e=document.getElementById("save-status2");if(e){e.textContent="✓ 已存檔";setTimeout(()=>{e.textContent="✓ 自動存檔";},1200);}}catch(e){}}
-function ld(){try{const d=localStorage.getItem(K);if(d){const p=JSON.parse(d);if(p&&p.monId&&MONS[p.monId]){G=p;['sp','hunger','mood'].forEach(k=>{if(G[k]==null)G[k]=k==='sp'?0:80;});if(!G.bag)G.bag={meat:3,snack:3,potion:2,vitamin:1};if(!G.lastSeen)G.lastSeen=Date.now();document.getElementById("save-status").textContent="✓ 找到存檔！";return true;}}}catch(e){}return false;}
+function ld(){try{const d=localStorage.getItem(K);if(d){const p=JSON.parse(d);if(p&&p.monId&&MONS[p.monId]){G=p;['sp','hunger','mood'].forEach(k=>{if(G[k]==null)G[k]=k==='sp'?0:80;});if(!G.bag)G.bag={meat:3,snack:3,potion:2,vitamin:1};if(!G.lastSeen)G.lastSeen=Date.now();if(!G.petName)G.petName="";if(!G.trainCount)G.trainCount=0;if(!G.playCount)G.playCount=0;if(!G.lastRefill)G.lastRefill={meat:0,snack:0,potion:0,vitamin:0};document.getElementById("save-status").textContent="✓ 找到存檔！";return true;}}}catch(e){}return false;}
 function newGame(){stopGPS();try{localStorage.removeItem(K);}catch(e){}G=dG();document.getElementById("save-status").textContent="已重置";}
 
 // ===== GPS 追蹤系統 =====
@@ -413,17 +618,34 @@ function dec(){
   const now=Date.now(),h=Math.min((now-G.lastSeen)/3600000,24);
   if(h<0.05)return null;
   const hl=Math.round(h*HPH),ml=Math.round(h*MPH);
-  G.hunger=Math.max(0,G.hunger-hl);G.mood=Math.max(0,G.mood-ml);
-  if(G.hunger===0)G.hp=Math.max(1,G.hp-Math.round(h*HPHP));
-  G.lastSeen=now;return{mins:Math.round(h*60),hl,ml};
+  G.hunger=Math.max(0,G.hunger-hl);
+  G.mood=Math.max(0,G.mood-ml);
+  // 飽食度夠時：HP緩慢回覆，同時消耗飽食度
+  if(G.hunger>20 && G.hp<G.maxHp){
+    const hpRegen=Math.round(h*HP_REGEN_PER_HOUR);
+    const hungerCost=Math.round(h*HUNGER_FOR_REGEN);
+    G.hp=Math.min(G.maxHp, G.hp+hpRegen);
+    G.hunger=Math.max(0, G.hunger-hungerCost);
+  }
+  // 飽食度歸0：HP開始下降
+  if(G.hunger===0) G.hp=Math.max(1,G.hp-Math.round(h*HPHP));
+  G.lastSeen=now;
+  return{mins:Math.round(h*60),hl,ml};
 }
 
 // ===== 核心函式 =====
-function mn(){return MONS[G.monId];}
-function ss(id,h){const e=document.getElementById(id);if(e)e.innerHTML=h;}
+function ss(id,monId,size){
+  setSpriteEl(document.getElementById(id),monId,size||88);
+}
+function ssFighter(id,monId){
+  const e=document.getElementById(id);if(!e)return;
+  setSpriteEl(e,monId,74);
+  if(id==="en-fighter-svg") e.style.transform="scaleX(-1)";
+}
 function m(id,t){const e=document.getElementById(id);if(e)e.textContent=t;}
-function an(c){const s=document.getElementById("my-sprite");if(!s)return;s.classList.remove("shake","happy");void s.offsetWidth;s.classList.add(c);}
+function an(c){const s=document.getElementById("my-sprite");if(!s)return;s.classList.remove("shake","happy");void s.offsetWidth;s.classList.add(c);setTimeout(()=>s.classList.remove(c),800);}
 function uLcd(){const e=document.getElementById("lcd-bg-svg");if(e)e.innerHTML=LCDBG[MSC[G.monId]||"grassland"];}
+function mn(){return MONS[G.monId]||MONS.pichu;}
 
 function startGame(){
   const d=dec();
@@ -453,8 +675,9 @@ function showTab(t){
 }
 function rf(){
   const mo=mn();
-  ss("my-sprite",mo.svg);document.getElementById("my-sprite").className="mon-svg";
-  m("my-name",mo.name);m("stage-label",mo.stage);
+  ss("my-sprite",G.monId,88);
+  const sp=document.getElementById("my-sprite");if(sp)sp.className="mon-sprite";
+  m("my-name", G.petName || mo.name);m("stage-label",mo.stage);
   document.getElementById("stat-lv").textContent=mo.lv+Math.floor(G.xp/30);
   document.getElementById("stat-atk").textContent=mo.atk+G.wins*2;
   document.getElementById("stat-win").textContent=G.wins;
@@ -478,17 +701,172 @@ function doTrain(){
   const g=Math.floor(Math.random()*8+5);
   G.xp+=g;G.hp=Math.max(1,G.hp-Math.floor(G.maxHp*0.1));
   G.hunger=Math.max(0,G.hunger-10);G.mood=Math.min(100,G.mood+5);G.sp=Math.min(SPM,G.sp+1);
+  G.trainCount=(G.trainCount||0)+1;
   m("status-msg","訓練完成！+"+g+" EXP");an("shake");rf();bEl();sv();
 }
 function doPlay(){
   G.mood=Math.min(100,G.mood+20);G.hunger=Math.max(0,G.hunger-5);G.sp=Math.min(SPM,G.sp+1);
+  G.playCount=(G.playCount||0)+1;
   m("status-msg","玩耍完！心情+20");an("happy");rf();sv();
 }
-function bBag(){const el=document.getElementById("bag-grid");if(!el)return;el.innerHTML="";Object.entries(ITS).forEach(([k,it])=>{const cnt=G.bag[k]||0,d=document.createElement("div");d.className="bc";d.innerHTML=`<div class="bi">${it.icon}</div><div class="bn">${it.name}</div><div class="bd">${it.desc}</div><button class="ib" style="width:100%;" ${cnt<=0?"disabled":""} onclick="uI('${k}')">使用</button>`;el.appendChild(d);});}
-function uI(k){if(!G.bag[k]||G.bag[k]<=0){m("bag-msg","道具不夠了！");return;}G.bag[k]--;ITS[k].ef();rf();bBag();sv();}
+
+// 時間恢復設定（分鐘）
+const REFILL_MINS={meat:120,snack:90,potion:180,vitamin:360};
+const ITEM_CFG={
+  meat: {name:"烤肉",   icon:"🍖",desc:"飽食度+50"},
+  snack:{name:"糖果",   icon:"🍬",desc:"心情+40"},
+  potion:{name:"急救藥",icon:"💊",desc:"HP恢復50%"},
+  vitamin:{name:"維他命",icon:"⭐",desc:"EXP+30"},
+};
+function getRefillStatus(k){
+  const lastMs=G.lastRefill[k]||0;
+  const coolMs=REFILL_MINS[k]*60*1000;
+  const elapsed=Date.now()-lastMs;
+  const ready=elapsed>=coolMs;
+  const remaining=Math.max(0,Math.ceil((coolMs-elapsed)/60000));
+  return{ready,remaining};
+}
+function bBag(){
+  const el=document.getElementById("bag-grid");if(!el)return;el.innerHTML="";
+  Object.keys(ITEM_CFG).forEach(k=>{
+    const it=ITEM_CFG[k];
+    const {ready,remaining}=getRefillStatus(k);
+    const d=document.createElement("div");d.className="bc";
+    d.innerHTML=`<div class="bi">${it.icon}</div>
+      <div class="bn">${it.name}</div>
+      <div class="bd">${it.desc}</div>
+      <div style="font-size:8px;color:${ready?"#44ff88":"#ffaa22"};margin-bottom:5px;">
+        ${ready?"✓ 可使用":"冷卻中 "+remaining+" 分鐘"}
+      </div>
+      <button class="ib" style="width:100%;" ${ready?"":"disabled"} onclick="uI('${k}')">使用</button>`;
+    el.appendChild(d);
+  });
+}
+function uI(k){
+  const {ready}=getRefillStatus(k);
+  if(!ready){m("bag-msg","還在冷卻中！");return;}
+  ITS[k].ef();
+  G.lastRefill[k]=Date.now();
+  rf();bBag();sv();
+}
+function resetAllItems(){
+  Object.keys(ITEM_CFG).forEach(k=>G.lastRefill[k]=0);
+  bBag();m("bag-msg","✓ 全部道具已重置！");sv();
+}
 function bEn(){const el=document.getElementById("enemy-list");el.innerHTML="";ENS.forEach((e,i)=>{const b=document.createElement("button");b.className="eb";b.innerHTML=(e.lv<=mn().lv+3?"⚔":"☠")+" <b>"+e.name+"</b>　LV:"+e.lv+"　ATK:"+e.atk+"　HP:"+e.hp;b.onclick=()=>sB(i);el.appendChild(b);});}
-function bEl(){const el=document.getElementById("evo-list");el.innerHTML="";const ps=EP[G.monId]||[];const mo=mn();const ok=G.xp>=mo.xpNeeded;if(!ps.length){el.innerHTML='<div style="font-size:9px;color:#446688;grid-column:1/-1;text-align:center;padding:14px;">已達最終形態</div>';document.getElementById("evo-btn").disabled=true;m("evo-msg","已是最強形態！");return;}ps.forEach(pid=>{const pm=MONS[pid],c=document.createElement("div");c.className="ec";c.innerHTML='<div style="display:flex;justify-content:center;"><svg viewBox="0 0 100 100" width="56" height="56">'+pm.svg+'</svg></div><div class="en">'+pm.name+'</div><div class="er">需 '+mo.xpNeeded+' EXP</div>';c.onclick=()=>{document.querySelectorAll(".ec").forEach(x=>x.classList.remove("sel"));c.classList.add("sel");document.getElementById("evo-btn").disabled=!ok;};el.appendChild(c);});m("evo-msg",ok?"條件達成！選擇目標！":"需 "+mo.xpNeeded+" EXP，目前 "+Math.floor(G.xp));document.getElementById("evo-btn").disabled=true;}
-function doEvolve(){const sel=document.querySelector(".ec.sel");if(!sel){m("evo-msg","請先選擇目標！");return;}const ps=EP[G.monId];const tid=ps[Array.from(document.querySelectorAll(".ec")).indexOf(sel)];const tm=MONS[tid];G.monId=tid;G.hp=tm.hp;G.maxHp=tm.hp;G.xp=0;G.hunger=80;G.mood=90;showTab("status");m("status-msg","恭喜！進化為「"+tm.name+"」！");rf();bEn();bEl();sv();}
+
+function getConditions(pid){
+  const c=[];
+  const tr=G.trainCount||0,pl=G.playCount||0;
+  if(pid==="koromon")   c.push({label:"經驗值",cur:Math.floor(G.xp),tgt:20,done:G.xp>=20});
+  if(pid==="agumon")    c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:60,done:G.xp>=60},
+    {label:"訓練≥玩耍",cur:tr,tgt:pl,done:tr>=pl,special:true,note:tr+"次 ≥ "+pl+"次"}
+  );
+  if(pid==="gabumon")   c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:60,done:G.xp>=60},
+    {label:"玩耍>訓練",cur:pl,tgt:tr,done:pl>tr,special:true,note:pl+"次 > "+tr+"次"}
+  );
+  if(pid==="greymon")   c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:150,done:G.xp>=150},
+    {label:"勝場",cur:G.wins,tgt:5,done:G.wins>=5},
+    {label:"飽食度",cur:G.hunger,tgt:50,done:G.hunger>=50}
+  );
+  if(pid==="garurumon") c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:150,done:G.xp>=150},
+    {label:"走路(m)",cur:G.steps,tgt:500,done:G.steps>=500}
+  );
+  if(pid==="metalgreymon") c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:400,done:G.xp>=400},
+    {label:"勝場",cur:G.wins,tgt:15,done:G.wins>=15}
+  );
+  if(pid==="weregarurumon") c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:400,done:G.xp>=400},
+    {label:"走路(m)",cur:G.steps,tgt:2000,done:G.steps>=2000}
+  );
+  if(pid==="wargreymon") c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:999,done:G.xp>=999},
+    {label:"勝場",cur:G.wins,tgt:30,done:G.wins>=30}
+  );
+  if(pid==="omnimon")   c.push(
+    {label:"經驗值",cur:Math.floor(G.xp),tgt:999,done:G.xp>=999},
+    {label:"走路(m)",cur:G.steps,tgt:5000,done:G.steps>=5000}
+  );
+  return c;
+}
+
+function bEl(){
+  const el=document.getElementById("evo-list");
+  el.innerHTML="";
+  el.style.gridTemplateColumns="1fr";
+  const ps=EP[G.monId]||[];
+  if(!ps.length){
+    el.innerHTML='<div style="font-size:9px;color:#446688;text-align:center;padding:14px;">已達最終形態</div>';
+    document.getElementById("evo-btn").disabled=true;
+    m("evo-msg","已是最強形態！");return;
+  }
+  let anyReady=false;
+  ps.forEach(({id:pid,check},pidx)=>{
+    const pm=MONS[pid];
+    const ready=check();
+    if(ready)anyReady=true;
+    const conds=getConditions(pid);
+    const allDone=conds.every(x=>x.done);
+    const c=document.createElement("div");
+    c.className="ec"+(ready?" sel":"");
+    c.style.opacity=ready?"1":"0.78";
+    let condHTML="";
+    conds.forEach(({label,cur,tgt,done,special,note})=>{
+      const pct=special?100:Math.min(100,Math.round(Number(cur)/Number(tgt)*100));
+      const barCol=done?"#44ff88":"#1e3a50";
+      const fw=done?"font-weight:500;":"";
+      const col=done?"color:#88ffaa;":"color:#6688aa;";
+      const valText=special?(done?"✓ 達成":(note||cur+"次")):cur+"/"+tgt;
+      condHTML+=`<div style="margin-top:5px;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:8px;${fw}${col}">${label}</span>
+          <span style="font-size:8px;${fw}${col}">${valText}</span>
+        </div>
+        ${special?"":`<div style="margin-top:2px;height:5px;background:#0a1418;border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${barCol};border-radius:3px;transition:width 0.4s;"></div>
+        </div>`}
+      </div>`;
+    });
+    c.innerHTML=`<div style="display:flex;align-items:flex-start;gap:12px;text-align:left;">
+      <svg viewBox="0 0 100 100" width="52" height="52" style="flex-shrink:0;margin-top:2px;">${pm.svg}</svg>
+      <div style="flex:1;">
+        <div style="font-size:10px;color:${ready?"#88ffaa":"#88ccff"};${ready?"font-weight:500;":""}">${pm.name}</div>
+        <div style="font-size:8px;color:${ready?"#44ffaa":"#4a6a80"};margin-top:2px;">${ready?"★ 條件全部達成！":"進化條件"}</div>
+        ${condHTML}
+      </div>
+    </div>`;
+    c.onclick=()=>{
+      if(!ready)return;
+      document.querySelectorAll(".ec").forEach(x=>x.classList.remove("sel"));
+      c.classList.add("sel");
+      c.dataset.pid=pid;
+      document.getElementById("evo-btn").disabled=false;
+    };
+    if(ready) c.dataset.pid=pid;
+    el.appendChild(c);
+  });
+  m("evo-msg",anyReady?"條件達成！點選目標後按進化！":"繼續培育，達成條件後才能進化");
+  document.getElementById("evo-btn").disabled=true;
+}
+
+function doEvolve(){
+  const sel=document.querySelector(".ec.sel");if(!sel){m("evo-msg","請先選擇目標！");return;}
+  const ps=EP[G.monId];
+  const cards=Array.from(document.querySelectorAll(".ec"));
+  const idx=cards.indexOf(sel);
+  const tid=ps[idx].id;
+  const tm=MONS[tid];
+  G.monId=tid;G.hp=tm.hp;G.maxHp=tm.hp;G.xp=0;G.hunger=80;G.mood=90;
+  showTab("status");
+  const displayName=G.petName||tm.name;
+  m("status-msg","恭喜！「"+displayName+"」進化為 "+tm.name+"！");
+  rf();bEn();bEl();sv();
+}
 
 // ===== 戰鬥 =====
 let B={};const SPB=5;
@@ -499,8 +877,8 @@ function sBt(en){document.getElementById("btn-attack").disabled=!en;uSP();}
 function uSP(){const btn=document.getElementById("btn-special");btn.disabled=(B.over||B.busy||B.sp<SPB);document.getElementById("sp-charge-text").textContent=(B.sp||0)+"/"+SPB;document.getElementById("my-sp-inner").style.width=Math.min(100,Math.round((B.sp||0)/SPB*100))+"%";}
 function uBrs(){document.getElementById("my-hp-inner").style.width=Math.max(0,Math.round(B.mHp/B.mMaxHp*100))+"%";document.getElementById("en-hp-inner").style.width=Math.max(0,Math.round(B.eHp/B.eMaxHp*100))+"%";document.getElementById("en-sp-inner").style.width=Math.min(100,Math.round((B.eSp||0)/SPB*100))+"%";uSP();}
 function blog(t){const el=document.getElementById("battle-log");el.textContent+=t+"\n";el.scrollTop=el.scrollHeight;}
-function sB(idx){if(G.hunger<10){m("battle-msg","太餓了！先去背包餵食！");return;}const en=ENS[idx];B={idx,eHp:en.hp,eMaxHp:en.hp,mHp:G.hp,mMaxHp:G.maxHp,sp:G.sp,eSp:0,over:false,busy:false};document.getElementById("main-screen").classList.remove("active");document.getElementById("battle-screen").classList.add("active");ss("my-fighter-svg",mn().svg);ss("en-fighter-svg",en.svg);document.getElementById("my-fighter-label").textContent=mn().name;document.getElementById("en-fighter-label").textContent=en.name;document.getElementById("my-hp-inner").style.width=Math.round(G.hp/G.maxHp*100)+"%";document.getElementById("en-hp-inner").style.width="100%";document.getElementById("battle-log").textContent="";document.getElementById("battle-btns").style.display="grid";document.getElementById("flee-btn-wrap").style.display="block";sBt(true);const bg=document.getElementById("arena-bg-svg");if(bg)bg.innerHTML=BG[ESC[idx]||"grassland"];blog("⚔ "+mn().name+" VS "+en.name);if(G.hp<G.maxHp)blog("我方HP："+G.hp+"/"+G.maxHp);uBrs();}
-function sR(win,en,xp){document.getElementById("battle-screen").classList.remove("active");document.getElementById("result-screen").classList.add("active");const t=document.getElementById("result-title");t.textContent=win?"✨ 勝利！":"💀 敗北...";t.className="rt "+(win?"rw":"rl");document.getElementById("result-sprite").innerHTML=mn().svg;document.getElementById("result-stats").innerHTML=win?"對手："+en.name+"\n獲得EXP：+"+xp+"\nHP："+G.hp+"/"+G.maxHp+"\n飽食："+G.hunger+"\n心情："+G.mood+"\n總勝場："+G.wins:"對手："+en.name+"\nHP剩："+G.hp+"/"+G.maxHp+"\n先去背包恢復再挑戰！";}
+function sB(idx){if(G.hunger<10){m("battle-msg","太餓了！先去背包餵食！");return;}const en=ENS[idx];B={idx,eHp:en.hp,eMaxHp:en.hp,mHp:G.hp,mMaxHp:G.maxHp,sp:G.sp,eSp:0,over:false,busy:false};document.getElementById("main-screen").classList.remove("active");document.getElementById("battle-screen").classList.add("active");ssFighter("my-fighter-svg",G.monId);ssFighter("en-fighter-svg",en.id||"pichu");document.getElementById("my-fighter-label").textContent=mn().name;document.getElementById("en-fighter-label").textContent=en.name;document.getElementById("my-hp-inner").style.width=Math.round(G.hp/G.maxHp*100)+"%";document.getElementById("en-hp-inner").style.width="100%";document.getElementById("battle-log").textContent="";document.getElementById("battle-btns").style.display="grid";document.getElementById("flee-btn-wrap").style.display="block";sBt(true);const bg=document.getElementById("arena-bg-svg");if(bg)bg.innerHTML=BG[ESC[idx]||"grassland"];blog("⚔ "+mn().name+" VS "+en.name);if(G.hp<G.maxHp)blog("我方HP："+G.hp+"/"+G.maxHp);uBrs();}
+function sR(win,en,xp){document.getElementById("battle-screen").classList.remove("active");document.getElementById("result-screen").classList.add("active");const t=document.getElementById("result-title");t.textContent=win?"✨ 勝利！":"💀 敗北...";t.className="rt "+(win?"rw":"rl");const rs=document.getElementById("result-sprite");if(rs)rs.style.cssText=spriteStyle(G.monId,110);document.getElementById("result-stats").innerHTML=win?"對手："+en.name+"\n獲得EXP：+"+xp+"\nHP："+G.hp+"/"+G.maxHp+"\n飽食："+G.hunger+"\n心情："+G.mood+"\n總勝場："+G.wins:"對手："+en.name+"\nHP剩："+G.hp+"/"+G.maxHp+"\n先去背包恢復再挑戰！";}
 function battleAction(type){if(B.over||B.busy)return;if(type==="special"&&B.sp<SPB){blog("必殺能量不足！");return;}B.busy=true;sBt(false);const en=ENS[B.idx],myAtk=mn().atk+G.wins*2;let dmg;if(type==="special"){dmg=Math.floor(myAtk*(2.2+Math.random()*0.6));B.sp=0;}else{dmg=Math.floor(myAtk*(0.7+Math.random()*0.6));B.sp=Math.min(SPB,B.sp+1);}af("fw-my","mya",0.35);setTimeout(()=>{efx(type==="special"?"special":"slash","right");hff("en-fighter-svg");B.eHp-=dmg;uBrs();blog((type==="special"?"🌟 必殺！":"⚔ 攻擊")+"→ 敵-"+dmg);if(B.eHp<=0){B.over=true;G.wins++;const xp=Math.floor(en.lv*8+20);G.xp+=xp;G.hp=B.mHp;G.sp=B.sp;G.mood=Math.min(100,G.mood+15);G.hunger=Math.max(0,G.hunger-15);efx("boom","right");document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(true,en,xp);bEl();sv();},1200);return;}setTimeout(()=>{af("fw-en","ena",0.35);setTimeout(()=>{B.eSp=Math.min(SPB,B.eSp+1);let ed;if(B.eSp>=SPB){ed=Math.floor(en.atk*(2.0+Math.random()*0.5));B.eSp=0;efx("special","left");blog("😈 敵必殺！→ 我-"+ed);}else{ed=Math.floor(en.atk*(0.7+Math.random()*0.6));efx("hit","left");blog("💢 反擊！→ 我-"+ed);}hff("my-fighter-svg");B.mHp-=ed;uBrs();if(B.mHp<=0){B.over=true;G.hp=Math.max(1,Math.floor(G.maxHp*0.1));G.sp=0;G.mood=Math.max(0,G.mood-20);document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(false,en,0);sv();},1200);return;}B.busy=false;sBt(true);},250);},500);},300);}
 function fleeBattle(){G.hp=B.mHp;G.sp=B.sp;showMain();m("status-msg","逃跑成功！");sv();}
 ld();
