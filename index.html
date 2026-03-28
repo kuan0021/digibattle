@@ -299,7 +299,7 @@ button.ib{
   <div id="save-status" style="font-size:9px;color:#44aa44;"></div>
   <button class="g" onclick="goToName()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
   <button id="new-game-confirm" onclick="newGame()" style="font-size:10px;padding:10px;color:#ffee44;max-width:240px;">↺ 重新開始</button>
-  <div style="font-size:9px;color:#445566;">v0.36</div>
+  <div style="font-size:9px;color:#445566;">v0.37</div>
 </div>
 
 <!-- 命名畫面 -->
@@ -384,8 +384,8 @@ button.ib{
         <div id="online-lobby" style="display:flex;flex-direction:column;gap:6px;">
           <div id="fb-loading-msg" style="font-size:10px;color:#ffaa44;text-align:center;display:none;">⏳ 連線中，請稍候...</div>
           <div class="br" id="room-btns">
-            <button onclick="createRoom()" style="font-size:11px;padding:10px;background:#1a3a5a;color:#44aaff;box-shadow:0 3px 0 #0a1828,0 0 0 2px #2255aa;">建立房間</button>
-            <button onclick="showJoinInput()" style="font-size:11px;padding:10px;background:#1a3a1a;color:#44ffaa;box-shadow:0 3px 0 #0a1808,0 0 0 2px #226622;">加入房間</button>
+            <button onclick="createRoom()" ontouchstart="createRoom()" style="font-size:13px;padding:12px;background:linear-gradient(180deg,#3366cc 0%,#1a3a99 100%);color:#fff;box-shadow:0 4px 0 #0a1260,0 0 0 2px #6699ff;font-weight:900;-webkit-tap-highlight-color:transparent;">建立房間</button>
+            <button onclick="showJoinInput()" ontouchstart="showJoinInput()" style="font-size:13px;padding:12px;background:linear-gradient(180deg,#22aa55 0%,#116633 100%);color:#fff;box-shadow:0 4px 0 #062211,0 0 0 2px #44ff88;font-weight:900;-webkit-tap-highlight-color:transparent;">加入房間</button>
           </div>
           <div id="join-input-wrap" style="display:none;">
             <input id="room-code-input" type="text" maxlength="4" placeholder="輸入4位房間碼"
@@ -1087,7 +1087,6 @@ function fbReady(cb){
     const loadEl=document.getElementById('fb-loading-msg');
     const btnsEl=document.getElementById('room-btns');
     if(loadEl){loadEl.style.display='block';}
-    if(btnsEl){btnsEl.style.opacity='0.4';btnsEl.style.pointerEvents='none';}
     // 更新狀態為等待中
     const fbSt=document.getElementById('fb-state');
     if(fbSt&&fbSt.textContent==='● 載入中'){fbSt.textContent='⏳ 等待連線...';fbSt.style.color='#ffaa44';}
@@ -1097,7 +1096,6 @@ function fbReady(cb){
       if(window._fb && window._fb.db){
         clearInterval(check);
         if(loadEl)loadEl.style.display='none';
-        if(btnsEl){btnsEl.style.opacity='1';btnsEl.style.pointerEvents='auto';}
         const fbSt2=document.getElementById('fb-state');
         if(fbSt2){fbSt2.textContent='● 已連線';fbSt2.style.color='#44ff88';}
         cb();
@@ -1122,6 +1120,7 @@ function setOnlineStatus(msg, color){
 
 // 建立房間
 function createRoom(){
+  if(!window._fb||!window._fb.db){setOnlineStatus('Firebase 尚未就緒，請稍後再試','#ff6644');return;}
   fbReady(async ()=>{
     const {db, ref, set, onValue} = window._fb;
     const code = genCode();
@@ -1160,6 +1159,7 @@ function showJoinInput(){
 
 // 加入房間
 function joinRoom(){
+  if(!window._fb||!window._fb.db){setOnlineStatus('Firebase 尚未就緒，請稍後再試','#ff6644');return;}
   const input = document.getElementById('room-code-input');
   if(!input) return;
   const code = input.value.trim().toUpperCase();
