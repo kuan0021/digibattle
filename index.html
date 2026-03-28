@@ -299,7 +299,7 @@ button.ib{
   <div id="save-status" style="font-size:9px;color:#44aa44;"></div>
   <button class="g" onclick="goToName()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
   <button id="new-game-confirm" onclick="newGame()" style="font-size:10px;padding:10px;color:#ffee44;max-width:240px;">↺ 重新開始</button>
-  <div style="font-size:9px;color:#445566;">v0.37</div>
+  <div style="font-size:9px;color:#445566;">v0.39</div>
 </div>
 
 <!-- 命名畫面 -->
@@ -381,11 +381,12 @@ button.ib{
           <div id="fb-state" style="font-size:9px;color:#556677;">● 載入中</div>
         </div>
         <div id="online-status" style="font-size:9px;color:#556677;margin-bottom:8px;">尚未連線</div>
+        <div id="debug-log" style="font-size:9px;color:#aa8844;background:#1a1000;border:1px solid #443300;border-radius:6px;padding:6px;margin-bottom:6px;max-height:80px;overflow-y:auto;display:none;white-space:pre-wrap;"></div>
         <div id="online-lobby" style="display:flex;flex-direction:column;gap:6px;">
           <div id="fb-loading-msg" style="font-size:10px;color:#ffaa44;text-align:center;display:none;">⏳ 連線中，請稍候...</div>
           <div class="br" id="room-btns">
-            <button onclick="createRoom()" ontouchstart="createRoom()" style="font-size:13px;padding:12px;background:linear-gradient(180deg,#3366cc 0%,#1a3a99 100%);color:#fff;box-shadow:0 4px 0 #0a1260,0 0 0 2px #6699ff;font-weight:900;-webkit-tap-highlight-color:transparent;">建立房間</button>
-            <button onclick="showJoinInput()" ontouchstart="showJoinInput()" style="font-size:13px;padding:12px;background:linear-gradient(180deg,#22aa55 0%,#116633 100%);color:#fff;box-shadow:0 4px 0 #062211,0 0 0 2px #44ff88;font-weight:900;-webkit-tap-highlight-color:transparent;">加入房間</button>
+            <button onclick="createRoom()" ontouchstart="this._t=Date.now();createRoom()"  style="font-size:13px;padding:12px;background:linear-gradient(180deg,#3366cc 0%,#1a3a99 100%);color:#fff;box-shadow:0 4px 0 #0a1260,0 0 0 2px #6699ff;font-weight:900;-webkit-tap-highlight-color:transparent;">建立房間</button>
+            <button onclick="showJoinInput()" ontouchstart="this._t=Date.now();showJoinInput()"  style="font-size:13px;padding:12px;background:linear-gradient(180deg,#22aa55 0%,#116633 100%);color:#fff;box-shadow:0 4px 0 #062211,0 0 0 2px #44ff88;font-weight:900;-webkit-tap-highlight-color:transparent;">加入房間</button>
           </div>
           <div id="join-input-wrap" style="display:none;">
             <input id="room-code-input" type="text" maxlength="4" placeholder="輸入4位房間碼"
@@ -1113,6 +1114,14 @@ function genCode(){
   return Math.random().toString(36).substring(2,6).toUpperCase();
 }
 
+function debugLog(msg){
+  const el=document.getElementById('debug-log');
+  if(!el)return;
+  el.style.display='block';
+  const t=new Date().toLocaleTimeString();
+  el.textContent=t+' '+msg+'\n'+el.textContent;
+  el.textContent=el.textContent.slice(0,500);
+}
 function setOnlineStatus(msg, color){
   const el = document.getElementById('online-status');
   if(el){ el.textContent = msg; el.style.color = color||'#aabbcc'; }
@@ -1120,8 +1129,12 @@ function setOnlineStatus(msg, color){
 
 // 建立房間
 function createRoom(){
-  if(!window._fb||!window._fb.db){setOnlineStatus('Firebase 尚未就緒，請稍後再試','#ff6644');return;}
+  debugLog('createRoom 被呼叫');
+  if(!window._fb||!window._fb.db){debugLog('_fb 不存在！');setOnlineStatus('Firebase 尚未就緒，請稍後再試','#ff6644');return;}
+  debugLog('_fb OK, ROOM='+ROOM);
+  if(ROOM){resetOnlineState();return;}
   fbReady(async ()=>{
+    debugLog('fbReady 回呼觸發');
     const {db, ref, set, onValue} = window._fb;
     const code = genCode();
     const mo = mn();
@@ -1159,7 +1172,8 @@ function showJoinInput(){
 
 // 加入房間
 function joinRoom(){
-  if(!window._fb||!window._fb.db){setOnlineStatus('Firebase 尚未就緒，請稍後再試','#ff6644');return;}
+  debugLog('joinRoom 被呼叫');
+  if(!window._fb||!window._fb.db){debugLog('_fb 不存在！');setOnlineStatus('Firebase 尚未就緒，請稍後再試','#ff6644');return;}
   const input = document.getElementById('room-code-input');
   if(!input) return;
   const code = input.value.trim().toUpperCase();
@@ -1370,6 +1384,64 @@ function leaveRoom(){
   document.getElementById('join-input-wrap').style.display='none';
   setOnlineStatus('已離開房間', '#778899');
 }
+
+// 重置連線狀態（刷新/返回時呼叫）
+function resetOnlineState(){
+  try{
+    if(roomListener && window._fb){
+      const {off}=window._fb;
+      if(off) off(roomListener);
+    }
+  }catch(e){}
+  roomListener=null;
+  ROOM=null;
+  MY_SLOT=null;
+  B={};
+
+  const lobby=document.getElementById('online-lobby');
+  const info=document.getElementById('online-room-info');
+  const joinWrap=document.getElementById('join-input-wrap');
+  if(lobby) lobby.style.display='flex';
+  if(info)  info.style.display='none';
+  if(joinWrap) joinWrap.style.display='none';
+  setOnlineStatus('尚未連線','#556677');
+}
+
+// iPhone Safari BFCache：頁面從快取恢復時重置
+window.addEventListener('pageshow', function(e){
+  if(e.persisted){
+    // 頁面從 BFCache 恢復，重置連線狀態
+    resetOnlineState();
+    // Firebase 可能也失效，重新初始化
+    window._fbReady=false;
+    window._fb=null;
+    const fbSt=document.getElementById('fb-state');
+    if(fbSt){fbSt.textContent='● 重新連線中';fbSt.style.color='#ffaa44';}
+    // 重新載入 Firebase
+    if(typeof firebase!=='undefined' && firebase.apps && firebase.apps.length>0){
+      try{
+        const db=firebase.database();
+        window._fb={
+          db,
+          ref:(_db,path)=>firebase.database().ref(path),
+          set:(ref,val)=>ref.set(val),
+          get:(ref)=>ref.once('value'),
+          onValue:(ref,cb)=>{ref.on('value',snap=>cb(snap));return ref;},
+          off:(ref)=>{if(ref&&ref.off)ref.off();},
+          update:(ref,val)=>ref.update(val),
+          remove:(ref)=>ref.remove(),
+          push:(ref,val)=>ref.push(val),
+          serverTimestamp:firebase.database.ServerValue.TIMESTAMP
+        };
+        window._fbReady=true;
+        if(fbSt){fbSt.textContent='● 已連線';fbSt.style.color='#44ff88';}
+      }catch(e){
+        if(fbSt){fbSt.textContent='● 連線失敗';fbSt.style.color='#ff4444';}
+      }
+    }
+  }
+});
+
 
 function bEn(){const el=document.getElementById("enemy-list");el.innerHTML="";ENS.forEach((e,i)=>{const b=document.createElement("button");b.className="eb";b.innerHTML=(e.lv<=mn().lv+3?"⚔":"☠")+" <b>"+e.name+"</b>　LV:"+e.lv+"　ATK:"+e.atk+"　HP:"+e.hp;b.onclick=()=>sB(i);el.appendChild(b);});}
 
