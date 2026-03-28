@@ -299,7 +299,7 @@ button.ib{
   <div id="save-status" style="font-size:9px;color:#44aa44;"></div>
   <button class="g" onclick="goToName()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
   <button id="new-game-confirm" onclick="newGame()" style="font-size:10px;padding:10px;color:#ffee44;max-width:240px;">↺ 重新開始</button>
-  <div style="font-size:9px;color:#445566;">v0.39</div>
+  <div style="font-size:9px;color:#445566;">v0.40</div>
 </div>
 
 <!-- 命名畫面 -->
@@ -1133,13 +1133,14 @@ function createRoom(){
   if(!window._fb||!window._fb.db){debugLog('_fb 不存在！');setOnlineStatus('Firebase 尚未就緒，請稍後再試','#ff6644');return;}
   debugLog('_fb OK, ROOM='+ROOM);
   if(ROOM){resetOnlineState();return;}
-  fbReady(async ()=>{
+  fbReady(()=>{
     debugLog('fbReady 回呼觸發');
     const {db, ref, set, onValue} = window._fb;
     const code = genCode();
     const mo = mn();
     const roomRef = ref(db, 'rooms/' + code);
-    await set(roomRef, {
+    debugLog('準備寫入房間: '+code);
+    set(roomRef, {
       p1: {
         name: G.petName || mo.name,
         monId: G.monId,
@@ -1155,12 +1156,17 @@ function createRoom(){
       action: null,
       result: null,
       created: Date.now()
+    }).then(()=>{
+      debugLog('房間建立成功: '+code);
+      ROOM = code;
+      MY_SLOT = 'p1';
+      showRoomInfo(code);
+      setOnlineStatus('等待對手加入...', '#ffcc44');
+      listenRoom(code);
+    }).catch(e=>{
+      debugLog('建立失敗: '+e.message);
+      setOnlineStatus('建立房間失敗，請重試','#ff4444');
     });
-    ROOM = code;
-    MY_SLOT = 'p1';
-    showRoomInfo(code);
-    setOnlineStatus('等待對手加入...', '#ffcc44');
-    listenRoom(code);
   });
 }
 
@@ -1178,29 +1184,26 @@ function joinRoom(){
   if(!input) return;
   const code = input.value.trim().toUpperCase();
   if(code.length !== 4){ setOnlineStatus('請輸入4位房間碼', '#ff6644'); return; }
-  fbReady(async ()=>{
+  fbReady(()=>{
     const {db, ref, get, set} = window._fb;
-    const snap = await get(ref(db, 'rooms/' + code));
-    if(!snap.exists()){ setOnlineStatus('找不到此房間', '#ff6644'); return; }
-    const data = snap.val();
-    if(data.status !== 'waiting'){ setOnlineStatus('此房間已開始或已滿', '#ff6644'); return; }
-    if(data.p2){ setOnlineStatus('房間已滿', '#ff6644'); return; }
-    const mo = mn();
-    await set(ref(db, 'rooms/' + code + '/p2'), {
-      name: G.petName || mo.name,
-      monId: G.monId,
-      monName: mo.name,
-      atk: mo.atk,
-      hp: G.hp,
-      maxHp: G.maxHp,
-      ready: false
-    });
-    await set(ref(db, 'rooms/' + code + '/status'), 'ready');
-    ROOM = code;
-    MY_SLOT = 'p2';
-    showRoomInfo(code);
-    setOnlineStatus('已加入！準備對戰...', '#44ff88');
-    listenRoom(code);
+    debugLog('查詢房間: '+code);
+    get(ref(db,'rooms/'+code)).then(snap=>{
+      if(!snap.exists()){debugLog('房間不存在');setOnlineStatus('找不到此房間','#ff6644');return;}
+      const data=snap.val();
+      if(data.status!=='waiting'){setOnlineStatus('此房間已開始或已滿','#ff6644');return;}
+      if(data.p2){setOnlineStatus('房間已滿','#ff6644');return;}
+      const mo=mn();
+      const p2data={name:G.petName||mo.name,monId:G.monId,monName:mo.name,atk:mo.atk,hp:G.hp,maxHp:G.maxHp,ready:false};
+      set(ref(db,'rooms/'+code+'/p2'),p2data).then(()=>{
+        return set(ref(db,'rooms/'+code+'/status'),'ready');
+      }).then(()=>{
+        debugLog('加入成功');
+        ROOM=code;MY_SLOT='p2';
+        showRoomInfo(code);
+        setOnlineStatus('已加入！準備對戰...','#44ff88');
+        listenRoom(code);
+      }).catch(e=>{debugLog('加入失敗:'+e.message);setOnlineStatus('加入失敗，請重試','#ff4444');});
+    }).catch(e=>{debugLog('查詢失敗:'+e.message);setOnlineStatus('查詢失敗，請重試','#ff4444');});
   });
 }
 
@@ -1423,7 +1426,7 @@ window.addEventListener('pageshow', function(e){
         const db=firebase.database();
         window._fb={
           db,
-          ref:(_db,path)=>firebase.database().ref(path),
+          ref:(_db,path)=>db.ref(path),
           set:(ref,val)=>ref.set(val),
           get:(ref)=>ref.once('value'),
           onValue:(ref,cb)=>{ref.on('value',snap=>cb(snap));return ref;},
