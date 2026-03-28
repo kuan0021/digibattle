@@ -141,6 +141,28 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
 .rs2{width:110px;height:110px;animation:idle 1.2s ease-in-out infinite;}
 .rst{background:#111e2d;border:2px solid #2a3a55;border-radius:8px;padding:12px;font-size:9px;color:#aabbcc;line-height:2.4;width:100%;}
 </style>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, off, remove, push, update, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const FB_CFG = {
+  apiKey:"AIzaSyDkhYJrEjjbOnlKpt8_ATO3DMvIF2OAj-Y",
+  authDomain:"digibattle-e63c5.firebaseapp.com",
+  databaseURL:"https://digibattle-e63c5-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"digibattle-e63c5",
+  storageBucket:"digibattle-e63c5.firebasestorage.app",
+  messagingSenderId:"740560646617",
+  appId:"1:740560646617:web:792b3ffcdf1e053734a9c8"
+};
+const fbApp = initializeApp(FB_CFG);
+const db = getDatabase(fbApp);
+
+// 讓主程式可以存取
+window._fb = { ref, set, get, onValue, off, remove, push, update, db, serverTimestamp };
+window._fbReady = true;
+window.dispatchEvent(new Event('fbReady'));
+</script>
 </head>
 <body>
 <div id="game">
@@ -151,7 +173,7 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
   <div id="save-status" style="font-size:9px;color:#44aa44;"></div>
   <button class="g" onclick="goToName()" style="font-size:14px;padding:16px;max-width:240px;">▶ 開始遊戲</button>
   <button onclick="newGame()" style="font-size:10px;padding:10px;color:#ffee44;max-width:240px;">↺ 重新開始</button>
-  <div style="font-size:9px;color:#445566;">v0.17</div>
+  <div style="font-size:9px;color:#445566;">v0.18</div>
 </div>
 
 <!-- 命名畫面 -->
@@ -236,7 +258,30 @@ button.ib{background:#1e1030;color:#ffccff;box-shadow:0 4px 0 #0a0618,0 0 0 2px 
 
     <!-- 對戰 tab -->
     <div id="tab-battle" class="tab-content">
-      <div class="st">選擇對手</div>
+
+      <!-- 連線對戰區塊 -->
+      <div style="background:#0e1c2a;border:2px solid #2a4060;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:9px;color:#44aaff;margin-bottom:8px;">⚡ 連線對戰</div>
+        <div id="online-status" style="font-size:9px;color:#556677;margin-bottom:8px;">尚未連線</div>
+        <div id="online-lobby" style="display:flex;flex-direction:column;gap:6px;">
+          <div class="br">
+            <button onclick="createRoom()" style="font-size:11px;padding:10px;background:#1a3a5a;color:#44aaff;box-shadow:0 3px 0 #0a1828,0 0 0 2px #2255aa;">建立房間</button>
+            <button onclick="showJoinInput()" style="font-size:11px;padding:10px;background:#1a3a1a;color:#44ffaa;box-shadow:0 3px 0 #0a1808,0 0 0 2px #226622;">加入房間</button>
+          </div>
+          <div id="join-input-wrap" style="display:none;">
+            <input id="room-code-input" type="text" maxlength="4" placeholder="輸入4位房間碼"
+              style="font-family:'Press Start 2P',monospace;font-size:11px;background:#0a1418;color:#e8f0ff;border:2px solid #2a4060;border-radius:6px;padding:10px;width:100%;text-align:center;text-transform:uppercase;outline:none;"/>
+            <button onclick="joinRoom()" style="margin-top:6px;font-size:11px;padding:10px;width:100%;background:#226622;color:#ccffdd;box-shadow:0 3px 0 #0a2208,0 0 0 2px #44aa44;">確認加入</button>
+          </div>
+        </div>
+        <div id="online-room-info" style="display:none;flex-direction:column;gap:6px;">
+          <div style="font-size:10px;color:#ffcc44;text-align:center;">房間碼：<span id="room-code-display" style="color:#fff;letter-spacing:3px;"></span></div>
+          <div id="room-players" style="font-size:9px;color:#aabbcc;text-align:center;"></div>
+          <button id="leave-room-btn" onclick="leaveRoom()" class="r" style="font-size:10px;padding:8px;">離開房間</button>
+        </div>
+      </div>
+
+      <div class="st">電腦對手</div>
       <div id="enemy-list" style="display:flex;flex-direction:column;gap:7px;"></div>
       <div class="mb" id="battle-msg">選擇對手開始！</div>
     </div>
@@ -759,6 +804,299 @@ function resetAllItems(){
   Object.keys(ITEM_CFG).forEach(k=>G.lastRefill[k]=0);
   bBag();m("bag-msg","✓ 全部道具已重置！");sv();
 }
+
+// ===== 連線對戰系統 =====
+let ROOM = null; // 目前房間資訊
+let MY_SLOT = null; // 'p1' or 'p2'
+let roomListener = null;
+
+function fbReady(cb){
+  if(window._fb && window._fb.db){
+    cb();
+  } else {
+    // 每 100ms 檢查一次，最多等 5 秒
+    let tries = 0;
+    const check = setInterval(()=>{
+      tries++;
+      if(window._fb && window._fb.db){
+        clearInterval(check);
+        cb();
+      } else if(tries > 50){
+        clearInterval(check);
+        setOnlineStatus('Firebase 連線失敗，請確認網路', '#ff4444');
+      }
+    }, 100);
+  }
+}
+
+// 產生4位隨機房間碼
+function genCode(){
+  return Math.random().toString(36).substring(2,6).toUpperCase();
+}
+
+function setOnlineStatus(msg, color){
+  const el = document.getElementById('online-status');
+  if(el){ el.textContent = msg; el.style.color = color||'#aabbcc'; }
+}
+
+// 建立房間
+function createRoom(){
+  fbReady(async ()=>{
+    const {db, ref, set, onValue} = window._fb;
+    const code = genCode();
+    const mo = mn();
+    const roomRef = ref(db, 'rooms/' + code);
+    await set(roomRef, {
+      p1: {
+        name: G.petName || mo.name,
+        monId: G.monId,
+        monName: mo.name,
+        atk: mo.atk,
+        hp: G.hp,
+        maxHp: G.maxHp,
+        ready: false
+      },
+      p2: null,
+      status: 'waiting',
+      turn: 'p1',
+      action: null,
+      result: null,
+      created: Date.now()
+    });
+    ROOM = code;
+    MY_SLOT = 'p1';
+    showRoomInfo(code);
+    setOnlineStatus('等待對手加入...', '#ffcc44');
+    listenRoom(code);
+  });
+}
+
+// 顯示加入輸入框
+function showJoinInput(){
+  const wrap = document.getElementById('join-input-wrap');
+  if(wrap) wrap.style.display = wrap.style.display==='none'?'block':'none';
+}
+
+// 加入房間
+function joinRoom(){
+  const input = document.getElementById('room-code-input');
+  if(!input) return;
+  const code = input.value.trim().toUpperCase();
+  if(code.length !== 4){ setOnlineStatus('請輸入4位房間碼', '#ff6644'); return; }
+  fbReady(async ()=>{
+    const {db, ref, get, set} = window._fb;
+    const snap = await get(ref(db, 'rooms/' + code));
+    if(!snap.exists()){ setOnlineStatus('找不到此房間', '#ff6644'); return; }
+    const data = snap.val();
+    if(data.status !== 'waiting'){ setOnlineStatus('此房間已開始或已滿', '#ff6644'); return; }
+    if(data.p2){ setOnlineStatus('房間已滿', '#ff6644'); return; }
+    const mo = mn();
+    await set(ref(db, 'rooms/' + code + '/p2'), {
+      name: G.petName || mo.name,
+      monId: G.monId,
+      monName: mo.name,
+      atk: mo.atk,
+      hp: G.hp,
+      maxHp: G.maxHp,
+      ready: false
+    });
+    await set(ref(db, 'rooms/' + code + '/status'), 'ready');
+    ROOM = code;
+    MY_SLOT = 'p2';
+    showRoomInfo(code);
+    setOnlineStatus('已加入！準備對戰...', '#44ff88');
+    listenRoom(code);
+  });
+}
+
+// 顯示房間資訊
+function showRoomInfo(code){
+  document.getElementById('online-lobby').style.display = 'none';
+  const info = document.getElementById('online-room-info');
+  info.style.display = 'flex';
+  document.getElementById('room-code-display').textContent = code;
+}
+
+// 監聽房間狀態變化
+function listenRoom(code){
+  const {db, ref, onValue, off} = window._fb;
+  if(roomListener) off(roomListener);
+  const roomRef = ref(db, 'rooms/' + code);
+  roomListener = onValue(roomRef, snap=>{
+    if(!snap.exists()) return;
+    const data = snap.val();
+
+    // 更新玩家顯示
+    const p1n = data.p1?.name || '—';
+    const p2n = data.p2?.name || '等待中...';
+    const el = document.getElementById('room-players');
+    if(el) el.innerHTML =
+      `<span style="color:${MY_SLOT==='p1'?'#ffff44':'#aabbcc'}">${p1n}</span>
+       <span style="color:#556677;"> VS </span>
+       <span style="color:${MY_SLOT==='p2'?'#ffff44':'#aabbcc'}">${p2n}</span>`;
+
+    // 雙方都加入，自動開始
+    if(data.status === 'ready' && data.p1 && data.p2){
+      setOnlineStatus('✓ 對手已加入！開始對戰！', '#44ff88');
+      setTimeout(()=>startOnlineBattle(data), 1500);
+    }
+
+    // 處理對戰中的動作
+    if(data.status === 'battle') handleOnlineTurn(data);
+
+    // 對戰結束
+    if(data.status === 'ended') handleOnlineEnd(data);
+  });
+}
+
+// 開始連線對戰
+function startOnlineBattle(data){
+  const en = MY_SLOT==='p1' ? data.p2 : data.p1;
+  const my = MY_SLOT==='p1' ? data.p1 : data.p2;
+  if(!en || !my) return;
+
+  // 建立對戰狀態（複用現有 B 物件）
+  B = {
+    online: true,
+    mySlot: MY_SLOT,
+    roomCode: ROOM,
+    eHp: en.maxHp, eMaxHp: en.maxHp,
+    mHp: my.maxHp, mMaxHp: my.maxHp,
+    sp: G.sp, eSp: 0,
+    over: false, busy: false,
+    enData: en
+  };
+
+  document.getElementById('main-screen').classList.remove('active');
+  document.getElementById('battle-screen').classList.add('active');
+  ssFighter('my-fighter-svg', my.monId || G.monId);
+  ssFighter('en-fighter-svg', en.monId || 'pichu');
+  document.getElementById('my-fighter-label').textContent = my.name;
+  document.getElementById('en-fighter-label').textContent = en.name;
+  document.getElementById('my-hp-inner').style.width = '100%';
+  document.getElementById('en-hp-inner').style.width = '100%';
+  document.getElementById('battle-log').textContent = '';
+  document.getElementById('battle-btns').style.display = 'grid';
+  document.getElementById('flee-btn-wrap').style.display = 'block';
+
+  const bg = document.getElementById('arena-bg-svg');
+  if(bg) bg.innerHTML = BG['city'] || '';
+
+  blog('⚡ 連線對戰開始！');
+  blog(my.name + ' VS ' + en.name);
+
+  // 判斷是否輪到我
+  updateOnlineBtns(data.turn);
+}
+
+// 更新按鈕狀態
+function updateOnlineBtns(turn){
+  if(!B || !B.online) return;
+  const myTurn = turn === MY_SLOT;
+  const btns = document.getElementById('battle-btns');
+  if(btns) btns.style.opacity = myTurn ? '1' : '0.4';
+  if(btns) btns.style.pointerEvents = myTurn ? 'auto' : 'none';
+  blog(myTurn ? '輪到你出招！' : '等待對手出招...');
+}
+
+// 送出動作
+function sendOnlineAction(action){
+  if(!B || !B.online || B.over) return;
+  const {db, ref, set} = window._fb;
+  set(ref(db, 'rooms/' + ROOM + '/action'), {
+    by: MY_SLOT,
+    type: action,
+    ts: Date.now()
+  });
+  set(ref(db, 'rooms/' + ROOM + '/status'), 'resolving');
+}
+
+// 處理回合
+function handleOnlineTurn(data){
+  if(!B || !B.online || B.over || B.busy) return;
+  if(data.status !== 'resolving') return;
+  const action = data.action;
+  if(!action) return;
+
+  B.busy = true;
+  const isMyAction = action.by === MY_SLOT;
+  const p1 = data.p1, p2 = data.p2;
+  const my = MY_SLOT==='p1' ? p1 : p2;
+  const en = MY_SLOT==='p1' ? p2 : p1;
+
+  const myAtk = my?.atk || mn().atk;
+  const enAtk = en?.atk || 30;
+
+  let dmgToEn = 0, dmgToMe = 0;
+
+  if(action.type === 'attack'){
+    dmgToEn = Math.max(1, myAtk - Math.floor(Math.random()*5));
+    dmgToMe = Math.max(1, enAtk - Math.floor(Math.random()*5));
+  } else if(action.type === 'special'){
+    dmgToEn = Math.max(1, Math.floor(myAtk * 1.8) - Math.floor(Math.random()*8));
+    dmgToMe = Math.max(1, Math.floor(enAtk * 0.5));
+  }
+
+  B.eHp = Math.max(0, B.eHp - dmgToEn);
+  B.mHp = Math.max(0, B.mHp - dmgToMe);
+
+  document.getElementById('my-hp-inner').style.width = Math.round(B.mHp/B.mMaxHp*100)+'%';
+  document.getElementById('en-hp-inner').style.width = Math.round(B.eHp/B.eMaxHp*100)+'%';
+
+  blog((isMyAction?'你':'對手') + '出招！');
+  if(dmgToEn>0) blog('對方受到 ' + dmgToEn + ' 傷害');
+  if(dmgToMe>0) blog('你受到 ' + dmgToMe + ' 傷害');
+
+  // 判斷勝負
+  const {db, ref, set} = window._fb;
+  if(B.mHp <= 0 || B.eHp <= 0){
+    const winner = B.eHp<=0 ? MY_SLOT : (MY_SLOT==='p1'?'p2':'p1');
+    set(ref(db,'rooms/'+ROOM+'/status'), 'ended');
+    set(ref(db,'rooms/'+ROOM+'/winner'), winner);
+  } else {
+    // 換手
+    const nextTurn = data.turn === 'p1' ? 'p2' : 'p1';
+    set(ref(db,'rooms/'+ROOM+'/turn'), nextTurn);
+    set(ref(db,'rooms/'+ROOM+'/status'), 'battle');
+    set(ref(db,'rooms/'+ROOM+'/action'), null);
+    setTimeout(()=>{ B.busy=false; updateOnlineBtns(nextTurn); }, 500);
+  }
+}
+
+// 對戰結束
+function handleOnlineEnd(data){
+  if(!B || B.over) return;
+  B.over = true;
+  const win = data.winner === MY_SLOT;
+  blog(win ? '🎉 你贏了！' : '💀 你輸了...');
+  G.wins += win ? 1 : 0;
+  G.xp += win ? 30 : 5;
+  sv();
+  setTimeout(()=>{
+    document.getElementById('battle-screen').classList.remove('active');
+    document.getElementById('main-screen').classList.add('active');
+    leaveRoom();
+    showTab('battle');
+    rf();
+  }, 2500);
+}
+
+// 覆寫攻擊函式，連線時改送動作
+
+
+// 離開房間
+function leaveRoom(){
+  if(!ROOM) return;
+  const {db, ref, remove, off} = window._fb;
+  if(roomListener){ off(roomListener); roomListener=null; }
+  if(MY_SLOT) remove(ref(db,'rooms/'+ROOM+'/'+MY_SLOT));
+  ROOM=null; MY_SLOT=null;
+  document.getElementById('online-lobby').style.display='flex';
+  document.getElementById('online-room-info').style.display='none';
+  document.getElementById('join-input-wrap').style.display='none';
+  setOnlineStatus('已離開房間', '#778899');
+}
+
 function bEn(){const el=document.getElementById("enemy-list");el.innerHTML="";ENS.forEach((e,i)=>{const b=document.createElement("button");b.className="eb";b.innerHTML=(e.lv<=mn().lv+3?"⚔":"☠")+" <b>"+e.name+"</b>　LV:"+e.lv+"　ATK:"+e.atk+"　HP:"+e.hp;b.onclick=()=>sB(i);el.appendChild(b);});}
 
 function getConditions(pid){
@@ -1033,7 +1371,18 @@ function uBrs(){document.getElementById("my-hp-inner").style.width=Math.max(0,Ma
 function blog(t){const el=document.getElementById("battle-log");el.textContent+=t+"\n";el.scrollTop=el.scrollHeight;}
 function sB(idx){if(G.hunger<10){m("battle-msg","太餓了！先去背包餵食！");return;}const en=ENS[idx];B={idx,eHp:en.hp,eMaxHp:en.hp,mHp:G.hp,mMaxHp:G.maxHp,sp:G.sp,eSp:0,over:false,busy:false};document.getElementById("main-screen").classList.remove("active");document.getElementById("battle-screen").classList.add("active");ssFighter("my-fighter-svg",G.monId);ssFighter("en-fighter-svg",en.id||"pichu");document.getElementById("my-fighter-label").textContent=mn().name;document.getElementById("en-fighter-label").textContent=en.name;document.getElementById("my-hp-inner").style.width=Math.round(G.hp/G.maxHp*100)+"%";document.getElementById("en-hp-inner").style.width="100%";document.getElementById("battle-log").textContent="";document.getElementById("battle-btns").style.display="grid";document.getElementById("flee-btn-wrap").style.display="block";sBt(true);const bg=document.getElementById("arena-bg-svg");if(bg)bg.innerHTML=BG[ESC[idx]||"grassland"];blog("⚔ "+mn().name+" VS "+en.name);if(G.hp<G.maxHp)blog("我方HP："+G.hp+"/"+G.maxHp);uBrs();}
 function sR(win,en,xp){document.getElementById("battle-screen").classList.remove("active");document.getElementById("result-screen").classList.add("active");const t=document.getElementById("result-title");t.textContent=win?"✨ 勝利！":"💀 敗北...";t.className="rt "+(win?"rw":"rl");const rs=document.getElementById("result-sprite");if(rs)rs.style.cssText=spriteStyle(G.monId,110);document.getElementById("result-stats").innerHTML=win?"對手："+en.name+"\n獲得EXP：+"+xp+"\nHP："+G.hp+"/"+G.maxHp+"\n飽食："+G.hunger+"\n心情："+G.mood+"\n總勝場："+G.wins:"對手："+en.name+"\nHP剩："+G.hp+"/"+G.maxHp+"\n先去背包恢復再挑戰！";}
-function battleAction(type){if(B.over||B.busy)return;if(type==="special"&&B.sp<SPB){blog("必殺能量不足！");return;}B.busy=true;sBt(false);const en=ENS[B.idx],myAtk=mn().atk+G.wins*2;let dmg;if(type==="special"){dmg=Math.floor(myAtk*(2.2+Math.random()*0.6));B.sp=0;}else{dmg=Math.floor(myAtk*(0.7+Math.random()*0.6));B.sp=Math.min(SPB,B.sp+1);}af("fw-my","mya",0.35);setTimeout(()=>{efx(type==="special"?"special":"slash","right");hff("en-fighter-svg");B.eHp-=dmg;uBrs();blog((type==="special"?"🌟 必殺！":"⚔ 攻擊")+"→ 敵-"+dmg);if(B.eHp<=0){B.over=true;G.wins++;const xp=Math.floor(en.lv*8+20);G.xp+=xp;G.hp=B.mHp;G.sp=B.sp;G.mood=Math.min(100,G.mood+15);G.hunger=Math.max(0,G.hunger-15);efx("boom","right");document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(true,en,xp);bEl();sv();},1200);return;}setTimeout(()=>{af("fw-en","ena",0.35);setTimeout(()=>{B.eSp=Math.min(SPB,B.eSp+1);let ed;if(B.eSp>=SPB){ed=Math.floor(en.atk*(2.0+Math.random()*0.5));B.eSp=0;efx("special","left");blog("😈 敵必殺！→ 我-"+ed);}else{ed=Math.floor(en.atk*(0.7+Math.random()*0.6));efx("hit","left");blog("💢 反擊！→ 我-"+ed);}hff("my-fighter-svg");B.mHp-=ed;uBrs();if(B.mHp<=0){B.over=true;G.hp=Math.max(1,Math.floor(G.maxHp*0.1));G.sp=0;G.mood=Math.max(0,G.mood-20);document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(false,en,0);sv();},1200);return;}B.busy=false;sBt(true);},250);},500);},300);}
+function battleAction(type){
+  if(B.over||B.busy)return;
+  // 連線模式：送動作到 Firebase
+  if(B && B.online){
+    if(type==='special'&&B.sp<SPB){blog('必殺能量不足！');return;}
+    if(type==='special'){B.sp=0;}else{B.sp=Math.min(SPB,B.sp+1);}
+    uBrs();
+    sendOnlineAction(type);
+    return;
+  }
+  // 以下是本地對戰邏輯
+  if(type==="special"&&B.sp<SPB){blog("必殺能量不足！");return;}B.busy=true;sBt(false);const en=ENS[B.idx],myAtk=mn().atk+G.wins*2;let dmg;if(type==="special"){dmg=Math.floor(myAtk*(2.2+Math.random()*0.6));B.sp=0;}else{dmg=Math.floor(myAtk*(0.7+Math.random()*0.6));B.sp=Math.min(SPB,B.sp+1);}af("fw-my","mya",0.35);setTimeout(()=>{efx(type==="special"?"special":"slash","right");hff("en-fighter-svg");B.eHp-=dmg;uBrs();blog((type==="special"?"🌟 必殺！":"⚔ 攻擊")+"→ 敵-"+dmg);if(B.eHp<=0){B.over=true;G.wins++;const xp=Math.floor(en.lv*8+20);G.xp+=xp;G.hp=B.mHp;G.sp=B.sp;G.mood=Math.min(100,G.mood+15);G.hunger=Math.max(0,G.hunger-15);efx("boom","right");document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(true,en,xp);bEl();sv();},1200);return;}setTimeout(()=>{af("fw-en","ena",0.35);setTimeout(()=>{B.eSp=Math.min(SPB,B.eSp+1);let ed;if(B.eSp>=SPB){ed=Math.floor(en.atk*(2.0+Math.random()*0.5));B.eSp=0;efx("special","left");blog("😈 敵必殺！→ 我-"+ed);}else{ed=Math.floor(en.atk*(0.7+Math.random()*0.6));efx("hit","left");blog("💢 反擊！→ 我-"+ed);}hff("my-fighter-svg");B.mHp-=ed;uBrs();if(B.mHp<=0){B.over=true;G.hp=Math.max(1,Math.floor(G.maxHp*0.1));G.sp=0;G.mood=Math.max(0,G.mood-20);document.getElementById("battle-btns").style.display="none";document.getElementById("flee-btn-wrap").style.display="none";setTimeout(()=>{sR(false,en,0);sv();},1200);return;}B.busy=false;sBt(true);},250);},500);},300);}
 function fleeBattle(){G.hp=B.mHp;G.sp=B.sp;showMain();m("status-msg","逃跑成功！");sv();}
 ld();
 // 封面皮丘
@@ -1045,5 +1394,7 @@ setTimeout(()=>{
   }
 },100);
 </script>
+
+
 </body>
 </html>
